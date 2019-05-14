@@ -52,6 +52,12 @@
             <param name="roomToJoin">Room to join, can be alias or id</param>
             <returns>String denoting failure or success</returns>
         </member>
+        <member name="M:loc0NetMatrixClient.MatrixClient.StartListener">
+            <summary>
+            Starts a message listener for any rooms you've joined
+            </summary>
+            <returns></returns>
+        </member>
         <member name="T:loc0NetMatrixClient.MatrixClient.MatrixLoginResponse">
             <summary>
             JSON structure for login response

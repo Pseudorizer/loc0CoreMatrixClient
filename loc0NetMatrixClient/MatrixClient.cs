@@ -14,6 +14,9 @@ namespace loc0NetMatrixClient
     public class MatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
+        private readonly List<string> _activeChannelsList = new List<string>();
+        private readonly int _messageLimit;
+        private string _filterId;
         /// <summary>
         /// AccessToken to be used when interacting with the API
         /// </summary>
@@ -30,7 +33,16 @@ namespace loc0NetMatrixClient
         /// Full userid of account
         /// </summary>
         public string UserId { get; private set; }
-        
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="messageLimit">Number of messages to take on each sync</param>
+        public MatrixClient(int messageLimit = 10)
+        {
+            _messageLimit = messageLimit;
+        }
+
         /// <summary>
         /// Login to a Matrix account
         /// </summary>
@@ -69,6 +81,43 @@ namespace loc0NetMatrixClient
             HomeServer = "https://" + loginResponseJson.HomeServer;
             UserId = loginResponseJson.UserId;
 
+            JObject filterJObject = new JObject(
+                new JProperty("room",
+                    new JObject(
+                        new JProperty("state",
+                            new JObject(
+                                new JProperty("not_types",
+                                    new JArray("*")))),
+                        new JProperty("timeline",
+                            new JObject(
+                                new JProperty("limit", _messageLimit),
+                                new JProperty("types",
+                                    new JArray("m.room.message")))),
+                        new JProperty("ephemeral",
+                            new JObject(
+                                new JProperty("not_types",
+                                    new JArray("*")))))),
+                new JProperty("presence",
+                    new JObject(
+                        new JProperty("not_types",
+                            new JArray("*")))),
+                new JProperty("event_format", "client"),
+                new JProperty("event_fields",
+                    new JArray("content"))); //replace with an object at some point, not easy to understand
+
+            var filterUrl = HomeServer + "/_matrix/client/r0/user/" + UserId + "/filter?access_token=" + AccessToken;
+
+            var filterResponse =
+                await _backendHttpClient.Post(filterUrl, filterJObject.ToString());
+
+            var filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
+
+            JObject filterJObjectParsed = JObject.Parse(filterResponseContent);
+
+            _filterId = (string) filterJObjectParsed["filter_id"];
+
+            Console.WriteLine(_filterId);
+
             return true;
         }
 
@@ -78,15 +127,15 @@ namespace loc0NetMatrixClient
         /// <param name="roomsToJoin">List of rooms to join, can be alias or id</param>
         /// <param name="retryFailure">If connecting to a room fails, it will retry until success</param>
         /// <returns>List of strings denoting failure or success</returns>
-        public async Task<List<string>> JoinRooms(List<string> roomsToJoin, bool retryFailure = false)
+        public async Task<List<string>> JoinRooms(List<string> roomsToJoin, bool retryFailure = false) //replace List<string> with something else, i don't know what yet
         {
             List<string> responseList = new List<string>();
-            
+
             for (var i = 0; i < roomsToJoin.Count; i++)
             {
                 var room = roomsToJoin[i];
                 Console.WriteLine($"Joining {room}");
-                
+
                 var requestUrl = HomeServer + "/_matrix/client/r0/join/" + HttpUtility.UrlEncode(room) +
                                  "?access_token=" + AccessToken;
 
@@ -96,6 +145,8 @@ namespace loc0NetMatrixClient
                 {
                     roomResponse.EnsureSuccessStatusCode();
                     responseList.Add($"Successfully Joined {room}");
+                    JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
+                    _activeChannelsList.Add((string)roomResponseJObject["room_id"]);
                 }
                 catch (HttpRequestException ex)
                 {
@@ -111,7 +162,7 @@ namespace loc0NetMatrixClient
 
             return responseList;
         }
-        
+
         /// <summary>
         /// Join a single room
         /// </summary>
@@ -127,8 +178,23 @@ namespace loc0NetMatrixClient
             return response[0];
         }
 
+        /// <summary>
+        /// Starts a message listener for any rooms you've joined
+        /// </summary>
+        /// <returns></returns>
+        public async Task StartListener()
+        {
+            //does stuff
+        }
+
+        public async Task Sync()
+        {
+            var r = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?access_token=" + AccessToken + "&filer=" + _filterId);
+            var t = await r.Content.ReadAsStringAsync();
+        }
+
         public delegate void MessageHandler(object obj, MessageReceivedEventArgs args);
-        
+
         /// <summary>
         /// JSON structure for login response
         /// </summary>

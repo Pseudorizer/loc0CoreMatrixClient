@@ -49,5 +49,12 @@ namespace loc0NetMatrixClient
 
             return response;
         }
+
+        /// <summary>
+        /// Wrapper for getting from a Matrix endpoint
+        /// </summary>
+        /// <param name="url">Endpoint</param>
+        /// <returns>HttpResponseMessage for consumption</returns>
+        public async Task<HttpResponseMessage> Get(string url) => await _client.GetAsync(new Uri(url));
     }
 }
