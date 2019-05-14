@@ -114,7 +114,9 @@ namespace loc0NetMatrixClient
 
         public delegate void MessageHandler(object obj, MessageReceivedEventArgs args);
         
-        
+        /// <summary>
+        /// JSON structure for login response
+        /// </summary>
         private class MatrixLoginResponse
         {
             [JsonProperty("user_id")]
