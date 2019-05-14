@@ -1,4 +1,4 @@
-namespace loc0NetMatrixClient
+namespace loc0NetMatrixClient.Models
 {
     /// <summary>
     /// Contains properties required for logging in to Matrix

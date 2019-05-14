@@ -29,7 +29,13 @@
             Full userid of account
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.Login(System.String,loc0NetMatrixClient.MatrixCredentials)">
+        <member name="M:loc0NetMatrixClient.MatrixClient.#ctor(System.Int32)">
+            <summary>
+            
+            </summary>
+            <param name="messageLimit">Number of messages to take on each sync</param>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixClient.Login(System.String,loc0NetMatrixClient.Models.MatrixCredentials)">
             <summary>
             Login to a Matrix account
             </summary>
@@ -58,36 +64,6 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="T:loc0NetMatrixClient.MatrixClient.MatrixLoginResponse">
-            <summary>
-            JSON structure for login response
-            </summary>
-        </member>
-        <member name="T:loc0NetMatrixClient.MatrixCredentials">
-            <summary>
-            Contains properties required for logging in to Matrix
-            </summary>
-        </member>
-        <member name="P:loc0NetMatrixClient.MatrixCredentials.UserName">
-            <summary>
-            Username of the account
-            </summary>
-        </member>
-        <member name="P:loc0NetMatrixClient.MatrixCredentials.DeviceName">
-            <summary>
-            Desired device name, if it's not specified one will be auto-generated on every login
-            </summary>
-        </member>
-        <member name="P:loc0NetMatrixClient.MatrixCredentials.Password">
-            <summary>
-            Account password
-            </summary>
-        </member>
-        <member name="P:loc0NetMatrixClient.MatrixCredentials.DeviceId">
-            <summary>
-            Desired device name, if it's not specified one will be auto-generated on every login
-            </summary>
-        </member>
         <member name="T:loc0NetMatrixClient.MatrixHttp">
             <summary>
             Methods for communicating with the Matrix API
@@ -107,6 +83,43 @@
             <param name="url">Endpoint</param>
             <param name="content">Content to be posted</param>
             <returns>HttpResponseMessage for consumption</returns>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixHttp.Get(System.String)">
+            <summary>
+            Wrapper for getting from a Matrix endpoint
+            </summary>
+            <param name="url">Endpoint</param>
+            <returns>HttpResponseMessage for consumption</returns>
+        </member>
+        <member name="T:loc0NetMatrixClient.Models.LoginJson">
+            <summary>
+            JSON structure for login response
+            </summary>
+        </member>
+        <member name="T:loc0NetMatrixClient.Models.MatrixCredentials">
+            <summary>
+            Contains properties required for logging in to Matrix
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.UserName">
+            <summary>
+            Username of the account
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.DeviceName">
+            <summary>
+            Desired device name, if it's not specified one will be auto-generated on every login
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.Password">
+            <summary>
+            Account password
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.DeviceId">
+            <summary>
+            Desired device name, if it's not specified one will be auto-generated on every login
+            </summary>
         </member>
     </members>
 </doc>

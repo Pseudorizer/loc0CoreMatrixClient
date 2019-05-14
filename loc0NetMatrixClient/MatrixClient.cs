@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
+using loc0NetMatrixClient.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -11,12 +12,13 @@ namespace loc0NetMatrixClient
     /// <summary>
     /// Client for interacting with the Matrix API
     /// </summary>
-    public class MatrixClient
+    public partial class MatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
         private readonly List<string> _activeChannelsList = new List<string>();
         private readonly int _messageLimit;
         private string _filterId;
+        private string _filterString;
         /// <summary>
         /// AccessToken to be used when interacting with the API
         /// </summary>
@@ -73,7 +75,7 @@ namespace loc0NetMatrixClient
                 return false;
             }
 
-            var loginResponseJson = JsonConvert.DeserializeObject<MatrixLoginResponse>(
+            var loginResponseJson = JsonConvert.DeserializeObject<LoginJson>(
                 await loginResponse.Content.ReadAsStringAsync());
 
             AccessToken = loginResponseJson.AccessToken;
@@ -114,7 +116,8 @@ namespace loc0NetMatrixClient
 
             JObject filterJObjectParsed = JObject.Parse(filterResponseContent);
 
-            _filterId = (string) filterJObjectParsed["filter_id"];
+            _filterId = (string)filterJObjectParsed["filter_id"];
+            _filterString = filterJObject.ToString();
 
             return true;
         }
@@ -187,28 +190,23 @@ namespace loc0NetMatrixClient
 
         public async Task Sync()
         {
-            var r = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?access_token=" + AccessToken + "&filer=" + _filterId);
-            var t = await r.Content.ReadAsStringAsync();
+            var syncResponseMessage = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?filter=" + _filterId + "&access_token=" + AccessToken);
+            var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
+            JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
+            var nextBatch = (string)syncResponseJObject["next_batch"];
+
+            foreach (var channel in _activeChannelsList)
+            {
+                var messageResponseMessage = await _backendHttpClient.Get(
+                    HomeServer + "/_matrix/client/r0/rooms/" + HttpUtility.UrlEncode(channel) + "/messages?from=" +
+                    nextBatch + "&filter=" + _filterString + "&dir=b" + "&access_token=" + AccessToken);
+
+                var messageResponseMessageContent = await messageResponseMessage.Content.ReadAsStringAsync();
+
+                var roomMessageParsed = JsonConvert.DeserializeObject<RoomMessageJson>(messageResponseMessageContent);
+            }
         }
 
         public delegate void MessageHandler(object obj, MessageReceivedEventArgs args);
-
-        /// <summary>
-        /// JSON structure for login response
-        /// </summary>
-        private class MatrixLoginResponse
-        {
-            [JsonProperty("user_id")]
-            public string UserId { get; set; }
-
-            [JsonProperty("access_token")]
-            public string AccessToken { get; set; }
-
-            [JsonProperty("home_server")]
-            public string HomeServer { get; set; }
-
-            [JsonProperty("device_id")]
-            public string DeviceId { get; set; }
-        }
     }
 }
