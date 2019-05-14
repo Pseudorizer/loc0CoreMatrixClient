@@ -116,8 +116,6 @@ namespace loc0NetMatrixClient
 
             _filterId = (string) filterJObjectParsed["filter_id"];
 
-            Console.WriteLine(_filterId);
-
             return true;
         }
 
