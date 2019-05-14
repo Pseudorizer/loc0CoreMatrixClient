@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace loc0NetMatrixClient
 {
+    /// <summary>
+    /// Methods for communicating with the Matrix API
+    /// </summary>
     public class MatrixHttp
     {
         private readonly HttpClient _client = new HttpClient();

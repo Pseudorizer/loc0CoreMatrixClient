@@ -8,12 +8,27 @@ using Newtonsoft.Json.Linq;
 
 namespace loc0NetMatrixClient
 {
+    /// <summary>
+    /// Client for interacting with the Matrix API
+    /// </summary>
     public class MatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
+        /// <summary>
+        /// AccessToken to be used when interacting with the API
+        /// </summary>
         public string AccessToken { get; private set; }
+        /// <summary>
+        /// DeviceId in use
+        /// </summary>
         public string DeviceId { get; private set; }
+        /// <summary>
+        /// Homeserver the client is connected to
+        /// </summary>
         public string HomeServer { get; private set; }
+        /// <summary>
+        /// Full userid of account
+        /// </summary>
         public string UserId { get; private set; }
         
         /// <summary>

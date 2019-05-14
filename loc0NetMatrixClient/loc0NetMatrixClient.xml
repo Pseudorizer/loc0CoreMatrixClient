@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>loc0NetMatrixClient</name>
+    </assembly>
+    <members>
+        <member name="T:loc0NetMatrixClient.MatrixClient">
+            <summary>
+            Client for interacting with the Matrix API
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixClient.AccessToken">
+            <summary>
+            AccessToken to be used when interacting with the API
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixClient.DeviceId">
+            <summary>
+            DeviceId in use
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixClient.HomeServer">
+            <summary>
+            Homeserver the client is connected to
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixClient.UserId">
+            <summary>
+            Full userid of account
+            </summary>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixClient.Login(System.String,loc0NetMatrixClient.MatrixCredentials)">
+            <summary>
+            Login to a Matrix account
+            </summary>
+            <param name="host">Homeserver the account uses</param>
+            <param name="credentials">MatrixCredentials object that contains login info</param>
+            <returns>Bool based on success or failure</returns>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixClient.JoinRooms(System.Collections.Generic.List{System.String},System.Boolean)">
+            <summary>
+            Join multiple rooms via a list
+            </summary>
+            <param name="roomsToJoin">List of rooms to join, can be alias or id</param>
+            <param name="retryFailure">If connecting to a room fails, it will retry until success</param>
+            <returns>List of strings denoting failure or success</returns>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixClient.JoinRoom(System.String)">
+            <summary>
+            Join a single room
+            </summary>
+            <param name="roomToJoin">Room to join, can be alias or id</param>
+            <returns>String denoting failure or success</returns>
+        </member>
+        <member name="T:loc0NetMatrixClient.MatrixClient.MatrixLoginResponse">
+            <summary>
+            JSON structure for login response
+            </summary>
+        </member>
+        <member name="T:loc0NetMatrixClient.MatrixCredentials">
+            <summary>
+            Contains properties required for logging in to Matrix
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixCredentials.UserName">
+            <summary>
+            Username of the account
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixCredentials.DeviceName">
+            <summary>
+            Desired device name, if it's not specified one will be auto-generated on every login
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixCredentials.Password">
+            <summary>
+            Account password
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixCredentials.DeviceId">
+            <summary>
+            Desired device name, if it's not specified one will be auto-generated on every login
+            </summary>
+        </member>
+        <member name="T:loc0NetMatrixClient.MatrixHttp">
+            <summary>
+            Methods for communicating with the Matrix API
+            </summary>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixHttp.Post(System.String)">
+            <summary>
+            Wrapper for posting to a Matrix endpoint without content
+            </summary>
+            <param name="url">Endpoint</param>
+            <returns>HttpResponseMessage for consumption</returns>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixHttp.Post(System.String,System.String)">
+            <summary>
+            Wrapper for posting to a Matrix endpoint with content
+            </summary>
+            <param name="url">Endpoint</param>
+            <param name="content">Content to be posted</param>
+            <returns>HttpResponseMessage for consumption</returns>
+        </member>
+    </members>
+</doc>
