@@ -12,25 +12,29 @@ namespace loc0NetMatrixClient
     /// <summary>
     /// Client for interacting with the Matrix API
     /// </summary>
-    public partial class MatrixClient
+    public class MatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
         private readonly List<string> _activeChannelsList = new List<string>();
         private readonly int _messageLimit;
         private string _filterId;
         private string _filterString;
+
         /// <summary>
         /// AccessToken to be used when interacting with the API
         /// </summary>
         public string AccessToken { get; private set; }
+
         /// <summary>
         /// DeviceId in use
         /// </summary>
         public string DeviceId { get; private set; }
+
         /// <summary>
         /// Homeserver the client is connected to
         /// </summary>
         public string HomeServer { get; private set; }
+
         /// <summary>
         /// Full userid of account
         /// </summary>
@@ -40,6 +44,7 @@ namespace loc0NetMatrixClient
         /// 
         /// </summary>
         /// <param name="messageLimit">Number of messages to take on each sync</param>
+        
         public MatrixClient(int messageLimit = 10)
         {
             _messageLimit = messageLimit;
@@ -111,6 +116,16 @@ namespace loc0NetMatrixClient
 
             var filterResponse =
                 await _backendHttpClient.Post(filterUrl, filterJObject.ToString());
+
+            try
+            {
+                filterResponse.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine("Failed to upload filters\nAborting");
+                Environment.Exit(1);
+            }
 
             var filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
 
@@ -191,7 +206,19 @@ namespace loc0NetMatrixClient
         public async Task Sync()
         {
             var syncResponseMessage = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?filter=" + _filterId + "&access_token=" + AccessToken);
+
+            try
+            {
+                syncResponseMessage.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine("Sync failed");
+                return;
+            }
+
             var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
+
             JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
             var nextBatch = (string)syncResponseJObject["next_batch"];
 
