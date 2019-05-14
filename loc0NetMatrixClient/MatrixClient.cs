@@ -16,6 +16,12 @@ namespace loc0NetMatrixClient
         public string HomeServer { get; private set; }
         public string UserId { get; private set; }
         
+        /// <summary>
+        /// Login to a Matrix account
+        /// </summary>
+        /// <param name="host">Homeserver the account uses</param>
+        /// <param name="credentials">MatrixCredentials object that contains login info</param>
+        /// <returns>Bool based on success or failure</returns>
         public async Task<bool> Login(string host, MatrixCredentials credentials)
         {
             var loginJson = new JObject(
@@ -51,6 +57,12 @@ namespace loc0NetMatrixClient
             return true;
         }
 
+        /// <summary>
+        /// Join multiple rooms via a list
+        /// </summary>
+        /// <param name="roomsToJoin">List of rooms to join, can be alias or id</param>
+        /// <param name="retryFailure">If connecting to a room fails, it will retry until success</param>
+        /// <returns>List of strings denoting failure or success</returns>
         public async Task<List<string>> JoinRooms(List<string> roomsToJoin, bool retryFailure = false)
         {
             List<string> responseList = new List<string>();
@@ -85,6 +97,11 @@ namespace loc0NetMatrixClient
             return responseList;
         }
         
+        /// <summary>
+        /// Join a single room
+        /// </summary>
+        /// <param name="roomToJoin">Room to join, can be alias or id</param>
+        /// <returns>String denoting failure or success</returns>
         public async Task<string> JoinRoom(string roomToJoin)
         {
             var response = await JoinRooms(new List<string>

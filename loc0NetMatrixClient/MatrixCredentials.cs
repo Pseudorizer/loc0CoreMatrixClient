@@ -1,5 +1,8 @@
 namespace loc0NetMatrixClient
 {
+    /// <summary>
+    /// Contains properties required for logging in to Matrix
+    /// </summary>
     public class MatrixCredentials
     {
         public string UserName { get; set; }
