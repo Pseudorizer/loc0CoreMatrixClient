@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using loc0NetMatrixClient.Models;
@@ -16,6 +17,7 @@ namespace loc0NetMatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
         private readonly List<string> _activeChannelsList = new List<string>();
+        private readonly CancellationTokenSource _ctsToken = new CancellationTokenSource();
         private readonly int _messageLimit;
         private string _filterId;
         private string _filterString;
@@ -198,12 +200,23 @@ namespace loc0NetMatrixClient
         /// Starts a message listener for any rooms you've joined
         /// </summary>
         /// <returns></returns>
-        public async Task StartListener()
+        public void StartListener()
         {
-            //does stuff
+            try
+            {
+#pragma warning disable 4014
+                Task.Run(() => Sync(_ctsToken.Token), _ctsToken.Token); //just a template
+#pragma warning restore 4014
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
-        public async Task Sync()
+        public void StopListener() => _ctsToken.Cancel();
+
+        public async void Sync(CancellationToken ctToken)
         {
             var syncResponseMessage = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?filter=" + _filterId + "&access_token=" + AccessToken);
 
