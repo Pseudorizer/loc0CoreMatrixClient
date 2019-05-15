@@ -13,7 +13,7 @@ namespace loc0NetMatrixClient
     /// <summary>
     /// Client for interacting with the Matrix API
     /// </summary>
-    public partial class MatrixClient
+    public class MatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
         private readonly List<Channel> _activeChannelsList = new List<Channel>();
