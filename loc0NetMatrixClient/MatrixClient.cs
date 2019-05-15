@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using loc0NetMatrixClient.Events;
 using loc0NetMatrixClient.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -51,6 +52,14 @@ namespace loc0NetMatrixClient
         {
             _messageLimit = messageLimit;
         }
+
+        /// <inheritdoc />
+        public delegate void MessageReceivedEvent(MessageReceivedEventArgs args);
+
+        /// <summary>
+        /// Event for any incoming messages
+        /// </summary>
+        public event MessageReceivedEvent MessageReceived;
 
         /// <summary>
         /// Login to a Matrix account
@@ -211,8 +220,10 @@ namespace loc0NetMatrixClient
         /// Contact the sync endpoint
         /// </summary>
         /// <returns></returns>
-        public async Task Sync()
+        private async Task Sync() //break this up in the future, for now it's fine
         {
+            bool firstSync = true; //feel there may be a better way
+
             while (!_syncCancellationToken.IsCancellationRequested)
             {
                 var syncResponseMessage = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?filter=" + _filterId + "&access_token=" + AccessToken);
@@ -247,15 +258,23 @@ namespace loc0NetMatrixClient
 
                     channel.PrevBatch = roomMessageParsed.Start;
 
-                    if (roomMessageParsed.Chunk.Length == 0) continue;
+                    if (roomMessageParsed.Chunk.Length == 0 || firstSync)
+                    {
+                        firstSync = false;
+                        continue;
+                    }
+
+                    foreach (var message in roomMessageParsed.Chunk) //find out how to not include all messages on first sync
+                    {
+                        if (message.Content == null) continue;
+
+                        MessageReceivedEventArgs messageArg = new MessageReceivedEventArgs(message.RoomId, message.Content.Body, message.Sender);
+                        MessageReceived?.Invoke(messageArg);
+                    }
                 }
 
                 await Task.Delay(2000);
             }
         }
-
-        public delegate void MessageHandler(object obj, MessageReceivedEventArgs args);
-
-        public event MessageHandler MessageReceived;
     }
 }
