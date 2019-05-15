@@ -9,7 +9,7 @@ namespace loc0NetMatrixClient
     /// <summary>
     /// Methods for communicating with the Matrix API
     /// </summary>
-    public class MatrixHttp
+    internal class MatrixHttp
     {
         private readonly HttpClient _client = new HttpClient();
 
@@ -25,11 +25,10 @@ namespace loc0NetMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url));
-
-            var response = await _client.SendAsync(request);
-
-            return response;
+            using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url)))
+            {
+                return await _client.SendAsync(request);
+            }
         }
         
         /// <summary>
@@ -40,12 +39,32 @@ namespace loc0NetMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url, string content)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, url)
-            {
-                Content = new StringContent(content, Encoding.UTF8, "application/json")
-            };
+            HttpResponseMessage response;
 
-            var response = await _client.SendAsync(request);
+            using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url)) {Content = new StringContent(content, Encoding.UTF8, "application/json")})
+            {
+                response = await _client.SendAsync(request);
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Wrapper for getting from a Matrix endpoint
+        /// </summary>
+        /// <param name="url">Endpoint</param>
+        /// <returns>HttpResponseMessage for consumption</returns>
+        public async Task<HttpResponseMessage> Get(string url) => await _client.GetAsync(new Uri(url));
+
+        public async Task<HttpResponseMessage> Put(string url, string content)
+        {
+            HttpResponseMessage response;
+
+            using (var request = new HttpRequestMessage(HttpMethod.Put, new Uri(url))
+                {Content = new StringContent(content, Encoding.UTF8, "application/json")})
+            {
+                response = await _client.SendAsync(request);
+            }
 
             return response;
         }
