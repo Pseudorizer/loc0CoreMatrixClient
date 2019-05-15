@@ -23,7 +23,12 @@ If you find this right now, this is **very early** development. Very early in a 
 #### **Usage:** `MatrixClient matrixClient = new MatrixClient();`
 
 #### Methods
-`Login(string:hostServer, MatrixCredentials:credentials):Task<bool>`
+`MatrixClient(int:messageLimit=10)`
+
+messageLimit is optional and defaults to 10
+
+---
+`Login(string:hostServer, MatrixCredentials:credentials):bool`
 
 Login to a Matrix account through a MatrixCredentials object
 
