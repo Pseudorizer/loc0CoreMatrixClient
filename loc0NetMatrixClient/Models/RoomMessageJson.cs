@@ -2,7 +2,7 @@
 
 namespace loc0NetMatrixClient.Models
 {
-    public class RoomMessageJson
+    internal class RoomMessageJson
     {
         [JsonProperty("chunk")]
         public Chunk[] Chunk { get; set; }
@@ -14,7 +14,7 @@ namespace loc0NetMatrixClient.Models
         public string End { get; set; }
     }
 
-    public class Chunk
+    internal class Chunk
     {
         [JsonProperty("type")]
         public string Type { get; set; }
@@ -47,7 +47,7 @@ namespace loc0NetMatrixClient.Models
         public string StateKey { get; set; }
     }
 
-    public class Content
+    internal class Content
     {
         [JsonProperty("body", NullValueHandling = NullValueHandling.Ignore)]
         public string Body { get; set; }
@@ -71,7 +71,7 @@ namespace loc0NetMatrixClient.Models
         public string Membership { get; set; }
     }
 
-    public class Unsigned
+    internal class Unsigned
     {
         [JsonProperty("age")]
         public long Age { get; set; }

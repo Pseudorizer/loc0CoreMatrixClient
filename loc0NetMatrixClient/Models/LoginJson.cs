@@ -5,7 +5,7 @@ namespace loc0NetMatrixClient.Models
     /// <summary>
     /// JSON structure for login response
     /// </summary>
-    public class LoginJson
+    internal class LoginJson
     {
         [JsonProperty("user_id")]
         public string UserId { get; set; }

@@ -64,6 +64,17 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:loc0NetMatrixClient.MatrixClient.StopListener">
+            <summary>
+            Stop listening for events in the rooms you've joined
+            </summary>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixClient.Sync">
+            <summary>
+            Contact the sync endpoint
+            </summary>
+            <returns></returns>
+        </member>
         <member name="T:loc0NetMatrixClient.MatrixHttp">
             <summary>
             Methods for communicating with the Matrix API

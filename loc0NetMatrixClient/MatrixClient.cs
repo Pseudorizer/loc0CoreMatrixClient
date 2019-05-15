@@ -13,11 +13,11 @@ namespace loc0NetMatrixClient
     /// <summary>
     /// Client for interacting with the Matrix API
     /// </summary>
-    public class MatrixClient
+    public partial class MatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
-        private readonly List<string> _activeChannelsList = new List<string>();
-        private readonly CancellationTokenSource _ctsToken = new CancellationTokenSource();
+        private readonly List<Channel> _activeChannelsList = new List<Channel>();
+        private readonly CancellationTokenSource _syncCancellationToken = new CancellationTokenSource();
         private readonly int _messageLimit;
         private string _filterId;
         private string _filterString;
@@ -164,7 +164,7 @@ namespace loc0NetMatrixClient
                     roomResponse.EnsureSuccessStatusCode();
                     responseList.Add($"Successfully Joined {room}");
                     JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
-                    _activeChannelsList.Add((string)roomResponseJObject["room_id"]);
+                    _activeChannelsList.Add(new Channel((string)roomResponseJObject["room_id"]));
                 }
                 catch (HttpRequestException ex)
                 {
@@ -200,53 +200,62 @@ namespace loc0NetMatrixClient
         /// Starts a message listener for any rooms you've joined
         /// </summary>
         /// <returns></returns>
-        public void StartListener()
+        public void StartListener() => Sync().ConfigureAwait(false);
+
+        /// <summary>
+        /// Stop listening for events in the rooms you've joined
+        /// </summary>
+        public void StopListener() => _syncCancellationToken.Cancel();
+
+        /// <summary>
+        /// Contact the sync endpoint
+        /// </summary>
+        /// <returns></returns>
+        public async Task Sync()
         {
-            try
+            while (!_syncCancellationToken.IsCancellationRequested)
             {
-#pragma warning disable 4014
-                Task.Run(() => Sync(_ctsToken.Token), _ctsToken.Token); //just a template
-#pragma warning restore 4014
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
+                var syncResponseMessage = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?filter=" + _filterId + "&access_token=" + AccessToken);
 
-        public void StopListener() => _ctsToken.Cancel();
+                try
+                {
+                    syncResponseMessage.EnsureSuccessStatusCode();
+                }
+                catch (HttpRequestException)
+                {
+                    Console.WriteLine("Sync failed");
+                    return;
+                }
 
-        public async void Sync(CancellationToken ctToken)
-        {
-            var syncResponseMessage = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?filter=" + _filterId + "&access_token=" + AccessToken);
+                var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
 
-            try
-            {
-                syncResponseMessage.EnsureSuccessStatusCode();
-            }
-            catch (HttpRequestException)
-            {
-                Console.WriteLine("Sync failed");
-                return;
-            }
+                JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
+                var nextBatch = (string)syncResponseJObject["next_batch"];
 
-            var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
+                foreach (var channel in _activeChannelsList)
+                {
+                    var messageResponseMessage = await _backendHttpClient.Get(
+                        HomeServer + "/_matrix/client/r0/rooms/" + HttpUtility.UrlEncode(channel.ChannelId) +
+                        "/messages?from=" +
+                        nextBatch + "&filter=" + _filterString + "&dir=b&to=" + channel.PrevBatch + "&access_token=" +
+                        AccessToken);
 
-            JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
-            var nextBatch = (string)syncResponseJObject["next_batch"];
+                    var messageResponseMessageContent = await messageResponseMessage.Content.ReadAsStringAsync();
 
-            foreach (var channel in _activeChannelsList)
-            {
-                var messageResponseMessage = await _backendHttpClient.Get(
-                    HomeServer + "/_matrix/client/r0/rooms/" + HttpUtility.UrlEncode(channel) + "/messages?from=" +
-                    nextBatch + "&filter=" + _filterString + "&dir=b" + "&access_token=" + AccessToken);
+                    var roomMessageParsed =
+                        JsonConvert.DeserializeObject<RoomMessageJson>(messageResponseMessageContent);
 
-                var messageResponseMessageContent = await messageResponseMessage.Content.ReadAsStringAsync();
+                    channel.PrevBatch = roomMessageParsed.Start;
 
-                var roomMessageParsed = JsonConvert.DeserializeObject<RoomMessageJson>(messageResponseMessageContent);
+                    if (roomMessageParsed.Chunk.Length == 0) continue;
+                }
+
+                await Task.Delay(2000);
             }
         }
 
         public delegate void MessageHandler(object obj, MessageReceivedEventArgs args);
+
+        public event MessageHandler MessageReceived;
     }
 }
