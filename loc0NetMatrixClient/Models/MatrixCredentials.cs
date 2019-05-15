@@ -21,7 +21,7 @@ namespace loc0NetMatrixClient.Models
         public string Password { get; set; }
 
         /// <summary>
-        /// Desired device name, if it's not specified one will be auto-generated on every login
+        /// Desired device id, if it's not specified one will be auto-generated on every login
         /// </summary>
         public string DeviceId { get; set; }
     }
