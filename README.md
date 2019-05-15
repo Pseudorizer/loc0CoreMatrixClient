@@ -1,6 +1,6 @@
 # loc0NetMatrixClient
 A Matrix Client Built With .Net Core [WIP]
-If you find this right now, this is **very early** development. Very early in a sense that I started coding this one day before creating this repo.
+If you find this right now, this is **very early** development. Very early in a sense that I started coding this one day before creating this repo. Also, this is probably the biggest thing I've coded in my just over a year of programming experience, so the code isn't 100% amazing.
 
 # Current Progress
 * Login with username/password
