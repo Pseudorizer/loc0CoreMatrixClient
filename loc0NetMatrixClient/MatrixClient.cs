@@ -188,6 +188,8 @@ namespace loc0NetMatrixClient
                         i = i == 0 ? 0 : i - 1;
                     }
                 }
+
+                await Task.Delay(2000);
             }
 
             return responseList;
@@ -198,12 +200,12 @@ namespace loc0NetMatrixClient
         /// </summary>
         /// <param name="roomToJoin">Room to join, can be alias or id</param>
         /// <returns>String denoting failure or success</returns>
-        public async Task<string> JoinRoom(string roomToJoin)
+        public async Task<string> JoinRoom(string roomToJoin, bool retryFailure = false)
         {
             var response = await JoinRooms(new List<string>
             {
                 roomToJoin
-            });
+            }, retryFailure);
 
             return response[0];
         }
