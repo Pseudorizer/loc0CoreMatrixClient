@@ -9,6 +9,21 @@
             Args for MessageReceivedEvent
             </summary>
         </member>
+        <member name="P:loc0NetMatrixClient.Events.MessageReceivedEventArgs.RoomId">
+            <summary>
+            Origin RoomID of the message
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Events.MessageReceivedEventArgs.Message">
+            <summary>
+            Plain text message body content
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Events.MessageReceivedEventArgs.SenderId">
+            <summary>
+            ID of the user sending the message
+            </summary>
+        </member>
         <member name="M:loc0NetMatrixClient.Events.MessageReceivedEventArgs.#ctor(System.String,System.String,System.String)">
             <param name="roomId">RoomID from message chunk</param>
             <param name="message">Body from message chunk</param>
@@ -40,9 +55,6 @@
             </summary>
         </member>
         <member name="M:loc0NetMatrixClient.MatrixClient.#ctor(System.Int32)">
-            <summary>
-            
-            </summary>
             <param name="messageLimit">Number of messages to take on each sync</param>
         </member>
         <member name="T:loc0NetMatrixClient.MatrixClient.MessageReceivedEvent">
@@ -120,6 +132,23 @@
             <param name="url">Endpoint</param>
             <returns>HttpResponseMessage for consumption</returns>
         </member>
+        <member name="T:loc0NetMatrixClient.MatrixRoom">
+            <summary>
+            Creates an instance of a matrix room allowing for interaction with said room
+            </summary>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixRoom.#ctor(System.String)">
+            <param name="roomId">ID of room you want to call</param>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixRoom.SendMessage(loc0NetMatrixClient.Models.MatrixMessage,System.String,System.String)">
+            <summary>
+            Send a message to the room
+            </summary>
+            <param name="message">Message as a MatrixMessage</param>
+            <param name="hostServer">Host server or home server the room resides on</param>
+            <param name="accessToken">Your clients access token</param>
+            <returns>Bool based on success or failure</returns>
+        </member>
         <member name="T:loc0NetMatrixClient.Models.LoginJson">
             <summary>
             JSON structure for login response
@@ -147,7 +176,32 @@
         </member>
         <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.DeviceId">
             <summary>
-            Desired device name, if it's not specified one will be auto-generated on every login
+            Desired device id, if it's not specified one will be auto-generated on every login
+            </summary>
+        </member>
+        <member name="T:loc0NetMatrixClient.Models.MatrixMessage">
+            <summary>
+            Defines an object for storing a messages information
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Models.MatrixMessage.Type">
+            <summary>
+            Message type I.E. m.text
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Models.MatrixMessage.Format">
+            <summary>
+            Format of the information I.E. org.matrix.custom.html
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Models.MatrixMessage.FormattedBody">
+            <summary>
+            HTML formatted body
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.Models.MatrixMessage.Body">
+            <summary>
+            Plain text body
             </summary>
         </member>
     </members>

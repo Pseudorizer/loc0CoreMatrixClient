@@ -1,11 +1,11 @@
 ﻿namespace loc0NetMatrixClient.Models
 {
-    internal class Channel
+    internal class MatrixChannel
     {
         public string PrevBatch { get; set; }
         public string ChannelId { get; }
 
-        public Channel(string channelId)
+        public MatrixChannel(string channelId)
         {
             ChannelId = channelId;
         }

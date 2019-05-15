@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -17,7 +18,7 @@ namespace loc0NetMatrixClient
     public class MatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
-        private readonly List<Channel> _activeChannelsList = new List<Channel>();
+        private readonly List<MatrixChannel> _activeRoomsList = new List<MatrixChannel>();
         private readonly CancellationTokenSource _syncCancellationToken = new CancellationTokenSource();
         private readonly int _messageLimit;
         private string _filterId;
@@ -43,11 +44,7 @@ namespace loc0NetMatrixClient
         /// </summary>
         public string UserId { get; private set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="messageLimit">Number of messages to take on each sync</param>
-        
         public MatrixClient(int messageLimit = 10)
         {
             _messageLimit = messageLimit;
@@ -96,7 +93,13 @@ namespace loc0NetMatrixClient
 
             AccessToken = loginResponseJson.AccessToken;
             DeviceId = loginResponseJson.DeviceId;
-            HomeServer = "https://" + loginResponseJson.HomeServer;
+            HomeServer = loginResponseJson.HomeServer;
+
+            if (!Regex.IsMatch(HomeServer, @"^https:\/\/"))
+            {
+                HomeServer = "https://" + HomeServer;
+            }
+
             UserId = loginResponseJson.UserId;
 
             JObject filterJObject = new JObject(
@@ -173,7 +176,7 @@ namespace loc0NetMatrixClient
                     roomResponse.EnsureSuccessStatusCode();
                     responseList.Add($"Successfully Joined {room}");
                     JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
-                    _activeChannelsList.Add(new Channel((string)roomResponseJObject["room_id"]));
+                    _activeRoomsList.Add(new MatrixChannel((string)roomResponseJObject["room_id"]));
                 }
                 catch (HttpRequestException ex)
                 {
@@ -222,7 +225,7 @@ namespace loc0NetMatrixClient
         /// <returns></returns>
         private async Task Sync() //break this up in the future, for now it's fine
         {
-            bool firstSync = true; //feel there may be a better way
+            var firstSync = true; //feel there may be a better way
 
             while (!_syncCancellationToken.IsCancellationRequested)
             {
@@ -243,37 +246,40 @@ namespace loc0NetMatrixClient
                 JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
                 var nextBatch = (string)syncResponseJObject["next_batch"];
 
-                foreach (var channel in _activeChannelsList)
-                {
-                    var messageResponseMessage = await _backendHttpClient.Get(
-                        HomeServer + "/_matrix/client/r0/rooms/" + HttpUtility.UrlEncode(channel.ChannelId) +
-                        "/messages?from=" +
-                        nextBatch + "&filter=" + _filterString + "&dir=b&to=" + channel.PrevBatch + "&access_token=" +
-                        AccessToken);
+                await SyncRooms(nextBatch, firstSync);
 
-                    var messageResponseMessageContent = await messageResponseMessage.Content.ReadAsStringAsync();
-
-                    var roomMessageParsed =
-                        JsonConvert.DeserializeObject<RoomMessageJson>(messageResponseMessageContent);
-
-                    channel.PrevBatch = roomMessageParsed.Start;
-
-                    if (roomMessageParsed.Chunk.Length == 0 || firstSync)
-                    {
-                        firstSync = false;
-                        continue;
-                    }
-
-                    foreach (var message in roomMessageParsed.Chunk) //find out how to not include all messages on first sync
-                    {
-                        if (message.Content == null) continue;
-
-                        MessageReceivedEventArgs messageArg = new MessageReceivedEventArgs(message.RoomId, message.Content.Body, message.Sender);
-                        MessageReceived?.Invoke(messageArg);
-                    }
-                }
+                if (firstSync) firstSync = false;
 
                 await Task.Delay(2000, _syncCancellationToken.Token);
+            }
+        }
+
+        private async Task SyncRooms(string nextBatch, bool firstSync)
+        {
+            foreach (var room in _activeRoomsList)
+            {
+                var messageResponseMessage = await _backendHttpClient.Get(
+                    HomeServer + "/_matrix/client/r0/rooms/" + HttpUtility.UrlEncode(room.ChannelId) +
+                    "/messages?from=" +
+                    nextBatch + "&filter=" + _filterString + "&dir=b&to=" + room.PrevBatch + "&access_token=" +
+                    AccessToken);
+
+                var messageResponseMessageContent = await messageResponseMessage.Content.ReadAsStringAsync();
+
+                var roomMessageParsed =
+                    JsonConvert.DeserializeObject<RoomMessageJson>(messageResponseMessageContent);
+
+                room.PrevBatch = roomMessageParsed.Start;
+
+                if (roomMessageParsed.Chunk.Length == 0 || firstSync) continue;
+
+                foreach (var message in roomMessageParsed.Chunk)
+                {
+                    if (message.Content == null) continue;
+
+                    MessageReceivedEventArgs messageArg = new MessageReceivedEventArgs(message.RoomId, message.Content.Body, message.Sender);
+                    MessageReceived?.Invoke(messageArg);
+                }
             }
         }
     }

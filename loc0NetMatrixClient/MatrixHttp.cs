@@ -41,7 +41,7 @@ namespace loc0NetMatrixClient
         {
             HttpResponseMessage response;
 
-            using (var request = new HttpRequestMessage(HttpMethod.Post, url) {Content = new StringContent(content, Encoding.UTF8, "application/json")})
+            using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url)) {Content = new StringContent(content, Encoding.UTF8, "application/json")})
             {
                 response = await _client.SendAsync(request);
             }
@@ -55,5 +55,18 @@ namespace loc0NetMatrixClient
         /// <param name="url">Endpoint</param>
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Get(string url) => await _client.GetAsync(new Uri(url));
+
+        public async Task<HttpResponseMessage> Put(string url, string content)
+        {
+            HttpResponseMessage response;
+
+            using (var request = new HttpRequestMessage(HttpMethod.Put, new Uri(url))
+                {Content = new StringContent(content, Encoding.UTF8, "application/json")})
+            {
+                response = await _client.SendAsync(request);
+            }
+
+            return response;
+        }
     }
 }
