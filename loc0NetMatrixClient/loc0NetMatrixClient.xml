@@ -81,7 +81,7 @@
             <param name="retryFailure">If connecting to a room fails, it will retry until success</param>
             <returns>List of strings denoting failure or success</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.JoinRoom(System.String)">
+        <member name="M:loc0NetMatrixClient.MatrixClient.JoinRoom(System.String,System.Boolean)">
             <summary>
             Join a single room
             </summary>

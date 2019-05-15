@@ -249,6 +249,16 @@ namespace loc0NetMatrixClient
                 JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
                 var nextBatch = (string)syncResponseJObject["next_batch"];
 
+                JToken t = syncResponseJObject["rooms"]["join"];
+
+                foreach (var jToken in t.First)
+                {
+                    var f = jToken["timeline"]["events"];
+                    var r = f.ToString();
+                }
+
+                var e = t.ToString();
+
                 await SyncRooms(nextBatch, firstSync);
 
                 if (firstSync) firstSync = false;
