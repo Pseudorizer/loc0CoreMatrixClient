@@ -76,7 +76,7 @@ namespace loc0NetMatrixClient
                 new JProperty("initial_device_display_name", credentials.UserName),
                 new JProperty("device_id", credentials.DeviceId));
 
-            var loginResponse = await _backendHttpClient.Post(host + "/_matrix/client/r0/login", loginJson.ToString());
+            var loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJson.ToString());
 
             try
             {
@@ -126,7 +126,7 @@ namespace loc0NetMatrixClient
                 new JProperty("event_fields",
                     new JArray("content"))); //replace with an object at some point, not easy to understand
 
-            var filterUrl = HomeServer + "/_matrix/client/r0/user/" + UserId + "/filter?access_token=" + AccessToken;
+            var filterUrl = $"{HomeServer}/_matrix/client/r0/user/{UserId}/filter?access_token={AccessToken}";
 
             var filterResponse =
                 await _backendHttpClient.Post(filterUrl, filterJObject.ToString());
@@ -166,8 +166,8 @@ namespace loc0NetMatrixClient
                 var room = roomsToJoin[i];
                 Console.WriteLine($"Joining {room}");
 
-                var requestUrl = HomeServer + "/_matrix/client/r0/join/" + HttpUtility.UrlEncode(room) +
-                                 "?access_token=" + AccessToken;
+                var requestUrl =
+                    $"{HomeServer}/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}?access_token={AccessToken}";
 
                 var roomResponse = await _backendHttpClient.Post(requestUrl);
 
@@ -229,7 +229,8 @@ namespace loc0NetMatrixClient
 
             while (!_syncCancellationToken.IsCancellationRequested)
             {
-                var syncResponseMessage = await _backendHttpClient.Get(HomeServer + "/_matrix/client/r0/sync?filter=" + _filterId + "&access_token=" + AccessToken);
+                var syncResponseMessage = await _backendHttpClient.Get(
+                    $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&access_token={AccessToken}");
 
                 try
                 {
@@ -259,10 +260,7 @@ namespace loc0NetMatrixClient
             foreach (var room in _activeRoomsList)
             {
                 var messageResponseMessage = await _backendHttpClient.Get(
-                    HomeServer + "/_matrix/client/r0/rooms/" + HttpUtility.UrlEncode(room.ChannelId) +
-                    "/messages?from=" +
-                    nextBatch + "&filter=" + _filterString + "&dir=b&to=" + room.PrevBatch + "&access_token=" +
-                    AccessToken);
+                    $"{HomeServer}/_matrix/client/r0/rooms/{HttpUtility.UrlEncode(room.ChannelId)}/messages?from={nextBatch}&filter={_filterString}&dir=b&to={room.PrevBatch}&access_token={AccessToken}");
 
                 var messageResponseMessageContent = await messageResponseMessage.Content.ReadAsStringAsync();
 
