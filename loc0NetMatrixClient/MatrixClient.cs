@@ -273,7 +273,7 @@ namespace loc0NetMatrixClient
                     }
                 }
 
-                await Task.Delay(2000);
+                await Task.Delay(2000, _syncCancellationToken.Token);
             }
         }
     }

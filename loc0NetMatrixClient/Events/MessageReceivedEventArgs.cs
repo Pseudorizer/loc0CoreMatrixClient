@@ -7,13 +7,22 @@ namespace loc0NetMatrixClient.Events
     /// </summary>
     public class MessageReceivedEventArgs : EventArgs
     {
-        public string RoomId { get; }
-        public string Message { get; }
-        public string SenderId { get; }
 
         /// <summary>
-        /// 
+        /// Origin RoomID of the message
         /// </summary>
+        public string RoomId { get; }
+
+        /// <summary>
+        /// Plain text message body content
+        /// </summary>
+        public string Message { get; }
+
+        /// <summary>
+        /// ID of the user sending the message
+        /// </summary>
+        public string SenderId { get; }
+
         /// <param name="roomId">RoomID from message chunk</param>
         /// <param name="message">Body from message chunk</param>
         /// <param name="senderId">SenderID from message chunk</param>

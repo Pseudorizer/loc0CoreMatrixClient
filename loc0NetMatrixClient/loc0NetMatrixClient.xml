@@ -4,6 +4,16 @@
         <name>loc0NetMatrixClient</name>
     </assembly>
     <members>
+        <member name="T:loc0NetMatrixClient.Events.MessageReceivedEventArgs">
+            <summary>
+            Args for MessageReceivedEvent
+            </summary>
+        </member>
+        <member name="M:loc0NetMatrixClient.Events.MessageReceivedEventArgs.#ctor(System.String,System.String,System.String)">
+            <param name="roomId">RoomID from message chunk</param>
+            <param name="message">Body from message chunk</param>
+            <param name="senderId">SenderID from message chunk</param>
+        </member>
         <member name="T:loc0NetMatrixClient.MatrixClient">
             <summary>
             Client for interacting with the Matrix API
@@ -34,6 +44,14 @@
             
             </summary>
             <param name="messageLimit">Number of messages to take on each sync</param>
+        </member>
+        <member name="T:loc0NetMatrixClient.MatrixClient.MessageReceivedEvent">
+            <inheritdoc />
+        </member>
+        <member name="E:loc0NetMatrixClient.MatrixClient.MessageReceived">
+            <summary>
+            Event for any incoming messages
+            </summary>
         </member>
         <member name="M:loc0NetMatrixClient.MatrixClient.Login(System.String,loc0NetMatrixClient.Models.MatrixCredentials)">
             <summary>
