@@ -21,33 +21,15 @@ namespace loc0NetMatrixClient
             _roomId = HttpUtility.UrlEncode(roomId);
         }
 
-        /// <summary>
-        /// Send a textMessage to the room
-        /// </summary>
-        /// <param name="textMessage">Message as a MatrixTextMessage</param>
-        /// <param name="hostServer">Host server or home server the room resides on</param>
-        /// <param name="accessToken">Your clients access token</param>
-        /// <returns>Bool based on success or failure</returns>
-        public async Task<bool> SendMessage(MatrixTextMessage textMessage, string hostServer, string accessToken)
+        private async Task<bool> SendMessage(JObject jsonContent, string hostServer, string accessToken)
         {
-            var messageJObject = new JObject
-            {
-                ["msgtype"] = textMessage.Type ?? "",
-
-                ["body"] = textMessage.Body ?? "",
-
-                ["format"] = textMessage.Format ?? "",
-
-                ["formatted_body"] = textMessage.FormattedBody ?? ""
-            };
-
             if (!Regex.IsMatch(hostServer, @"^https:\/\/"))
             {
                 hostServer = "https://" + hostServer;
             }
 
             HttpResponseMessage sendResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}", messageJObject.ToString());
+                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}", jsonContent.ToString());
 
             try
             {
@@ -61,6 +43,29 @@ namespace loc0NetMatrixClient
         }
 
         /// <summary>
+        /// Send a textMessage to the room
+        /// </summary>
+        /// <param name="textMessage">Message as a MatrixTextMessage</param>
+        /// <param name="hostServer">Host server or home server the room resides on</param>
+        /// <param name="accessToken">Your clients access token</param>
+        /// <returns>Bool based on success or failure</returns>
+        public async Task<bool> SendText(MatrixTextMessage textMessage, string hostServer, string accessToken)
+        {
+            var textJObject = new JObject
+            {
+                ["msgtype"] = textMessage.Type ?? "",
+
+                ["body"] = textMessage.Body ?? "",
+
+                ["format"] = textMessage.Format ?? "",
+
+                ["formatted_body"] = textMessage.FormattedBody ?? ""
+            };
+
+            return await SendMessage(textJObject, hostServer, accessToken);
+        }
+
+        /// <summary>
         /// Send an image file via a mxcUri
         /// </summary>
         /// <param name="matrixFileUrl">mxcUri of uploaded content</param>
@@ -70,7 +75,7 @@ namespace loc0NetMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> SendImage(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            var messageJObject = new JObject
+            var imageJObject = new JObject
             {
                 ["body"] = filename,
 
@@ -81,19 +86,7 @@ namespace loc0NetMatrixClient
                 ["url"] = matrixFileUrl
             };
 
-            HttpResponseMessage sendImageResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
-                messageJObject.ToString());
-
-            try
-            {
-                sendImageResponse.EnsureSuccessStatusCode();
-                return true;
-            }
-            catch (HttpRequestException)
-            {
-                return false;
-            }
+            return await SendMessage(imageJObject, hostServer, accessToken);
         }
 
         /// <summary>
@@ -102,7 +95,7 @@ namespace loc0NetMatrixClient
         /// <inheritdoc cref="SendImage"/>
         public async Task<bool> SendAudio(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            var messageJObject = new JObject
+            var audioJObject = new JObject
             {
                 ["body"] = filename,
 
@@ -113,24 +106,16 @@ namespace loc0NetMatrixClient
                 ["url"] = matrixFileUrl
             };
 
-            HttpResponseMessage sendAudioResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
-                messageJObject.ToString());
-
-            try
-            {
-                sendAudioResponse.EnsureSuccessStatusCode();
-                return true;
-            }
-            catch (HttpRequestException)
-            {
-                return false;
-            }
+            return await SendMessage(audioJObject, hostServer, accessToken);
         }
 
+        /// <summary>
+        /// Send a video file via a mxcUri
+        /// </summary>
+        /// <inheritdoc cref="SendImage"/>
         public async Task<bool> SendVideo(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            var messageJObject = new JObject
+            var videoJObject = new JObject
             {
                 ["body"] = filename,
 
@@ -141,19 +126,7 @@ namespace loc0NetMatrixClient
                 ["url"] = matrixFileUrl
             };
 
-            HttpResponseMessage sendVideoResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
-                messageJObject.ToString());
-
-            try
-            {
-                sendVideoResponse.EnsureSuccessStatusCode();
-                return true;
-            }
-            catch (HttpRequestException)
-            {
-                return false;
-            }
+            return await SendMessage(videoJObject, hostServer, accessToken);
         }
 
         /// <summary>
@@ -162,7 +135,7 @@ namespace loc0NetMatrixClient
         /// <inheritdoc cref="SendImage"/>
         public async Task<bool> SendFile(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            var messageJObject = new JObject
+            var fileJObject = new JObject
             {
                 ["body"] = filename,
 
@@ -175,19 +148,7 @@ namespace loc0NetMatrixClient
                 ["url"] = matrixFileUrl
             };
 
-            HttpResponseMessage sendFileResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
-                messageJObject.ToString());
-
-            try
-            {
-                sendFileResponse.EnsureSuccessStatusCode();
-                return true;
-            }
-            catch (HttpRequestException)
-            {
-                return false;
-            }
+            return await SendMessage(fileJObject, hostServer, accessToken);
         }
     }
 }

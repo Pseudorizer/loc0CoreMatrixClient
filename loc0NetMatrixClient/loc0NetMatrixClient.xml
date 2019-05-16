@@ -180,7 +180,7 @@
         <member name="M:loc0NetMatrixClient.MatrixRoom.#ctor(System.String)">
             <param name="roomId">ID of room you want to call</param>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.SendMessage(loc0NetMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
+        <member name="M:loc0NetMatrixClient.MatrixRoom.SendText(loc0NetMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
             <summary>
             Send a textMessage to the room
             </summary>
@@ -202,6 +202,12 @@
         <member name="M:loc0NetMatrixClient.MatrixRoom.SendAudio(System.String,System.String,System.String,System.String)">
             <summary>
             Send an audio file via a mxcUri
+            </summary>
+            <inheritdoc cref="M:loc0NetMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixRoom.SendVideo(System.String,System.String,System.String,System.String)">
+            <summary>
+            Send a video file via a mxcUri
             </summary>
             <inheritdoc cref="M:loc0NetMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
         </member>
@@ -264,11 +270,6 @@
         <member name="P:loc0NetMatrixClient.Models.MatrixTextMessage.Body">
             <summary>
             Plain text body
-            </summary>
-        </member>
-        <member name="T:loc0NetMatrixClient.Models.MatrixMediaMessage">
-            <summary>
-            
             </summary>
         </member>
     </members>
