@@ -12,4 +12,10 @@
       <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Reference Include="MimeTypes">
+        <HintPath>External Libararies\MimeTypes.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
 </Project>

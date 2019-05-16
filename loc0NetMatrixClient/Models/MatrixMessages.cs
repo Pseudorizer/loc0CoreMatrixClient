@@ -3,7 +3,7 @@
     /// <summary>
     /// Defines an object for storing a messages information
     /// </summary>
-    public class MatrixMessage
+    public class MatrixTextMessage
     {
 
         /// <summary>
