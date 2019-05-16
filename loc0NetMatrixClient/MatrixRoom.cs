@@ -30,7 +30,7 @@ namespace loc0NetMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> SendMessage(MatrixTextMessage textMessage, string hostServer, string accessToken)
         {
-            JObject messageJObject = new JObject
+            var messageJObject = new JObject
             {
                 ["msgtype"] = textMessage.Type ?? "",
 
@@ -46,7 +46,7 @@ namespace loc0NetMatrixClient
                 hostServer = "https://" + hostServer;
             }
 
-            var sendResponse = await _backendHttpClient.Post(
+            HttpResponseMessage sendResponse = await _backendHttpClient.Post(
                 $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}", messageJObject.ToString());
 
             try
@@ -70,7 +70,7 @@ namespace loc0NetMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> SendImage(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            JObject messageJObject = new JObject
+            var messageJObject = new JObject
             {
                 ["body"] = filename,
 
@@ -81,7 +81,7 @@ namespace loc0NetMatrixClient
                 ["url"] = matrixFileUrl
             };
 
-            var sendImageResponse = await _backendHttpClient.Post(
+            HttpResponseMessage sendImageResponse = await _backendHttpClient.Post(
                 $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
                 messageJObject.ToString());
 
@@ -102,7 +102,7 @@ namespace loc0NetMatrixClient
         /// <inheritdoc cref="SendImage"/>
         public async Task<bool> SendAudio(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            JObject messageJObject = new JObject
+            var messageJObject = new JObject
             {
                 ["body"] = filename,
 
@@ -113,7 +113,7 @@ namespace loc0NetMatrixClient
                 ["url"] = matrixFileUrl
             };
 
-            var sendAudioResponse = await _backendHttpClient.Post(
+            HttpResponseMessage sendAudioResponse = await _backendHttpClient.Post(
                 $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
                 messageJObject.ToString());
 
@@ -130,7 +130,7 @@ namespace loc0NetMatrixClient
 
         public async Task<bool> SendVideo(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            JObject messageJObject = new JObject
+            var messageJObject = new JObject
             {
                 ["body"] = filename,
 
@@ -141,7 +141,7 @@ namespace loc0NetMatrixClient
                 ["url"] = matrixFileUrl
             };
 
-            var sendVideoResponse = await _backendHttpClient.Post(
+            HttpResponseMessage sendVideoResponse = await _backendHttpClient.Post(
                 $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
                 messageJObject.ToString());
 
@@ -162,7 +162,7 @@ namespace loc0NetMatrixClient
         /// <inheritdoc cref="SendImage"/>
         public async Task<bool> SendFile(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            JObject messageJObject = new JObject
+            var messageJObject = new JObject
             {
                 ["body"] = filename,
 
@@ -175,7 +175,7 @@ namespace loc0NetMatrixClient
                 ["url"] = matrixFileUrl
             };
 
-            var sendFileResponse = await _backendHttpClient.Post(
+            HttpResponseMessage sendFileResponse = await _backendHttpClient.Post(
                 $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
                 messageJObject.ToString());
 

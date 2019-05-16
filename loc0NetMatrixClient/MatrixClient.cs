@@ -93,7 +93,7 @@ namespace loc0NetMatrixClient
                 ["device_id"] = credentials.DeviceId ?? ""
             };
 
-            var loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJObject.ToString());
+            HttpResponseMessage loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJObject.ToString());
 
             try
             {
@@ -151,7 +151,7 @@ namespace loc0NetMatrixClient
 
             var filterUrl = $"{HomeServer}/_matrix/client/r0/user/{UserId}/filter?access_token={AccessToken}";
 
-            var filterResponse =
+            HttpResponseMessage filterResponse =
                 await _backendHttpClient.Post(filterUrl, filterJObject.ToString());
 
             try
@@ -181,7 +181,7 @@ namespace loc0NetMatrixClient
         /// <returns>List of strings denoting failure or success</returns>
         public async Task<List<string>> JoinRooms(List<string> roomsToJoin, bool retryFailure = false) //replace List<string> with something else, i don't know what yet
         {
-            List<string> responseList = new List<string>();
+            var responseList = new List<string>();
 
             for (var i = 0; i < roomsToJoin.Count; i++)
             {
@@ -225,7 +225,7 @@ namespace loc0NetMatrixClient
         /// <returns>String denoting failure or success</returns>
         public async Task<string> JoinRoom(string roomToJoin, bool retryFailure = false)
         {
-            List<string> response = await JoinRooms(new List<string>
+            var response = await JoinRooms(new List<string>
             {
                 roomToJoin
             }, retryFailure);
@@ -299,10 +299,10 @@ namespace loc0NetMatrixClient
                 return;
             }
 
-            string firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
+            var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
 
             JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
-            string nextBatch = (string)firstSyncJObject["next_batch"];
+            var nextBatch = (string)firstSyncJObject["next_batch"];
 
             await Task.Delay(2000);
 
@@ -310,7 +310,6 @@ namespace loc0NetMatrixClient
             {
                 HttpResponseMessage syncResponseMessage = await _backendHttpClient.Get(
                     $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&since={nextBatch}&access_token={AccessToken}");
-
                 try
                 {
                     syncResponseMessage.EnsureSuccessStatusCode();
@@ -322,7 +321,7 @@ namespace loc0NetMatrixClient
                     continue;
                 }
 
-                string syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
+                var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
 
                 JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
 
@@ -342,17 +341,17 @@ namespace loc0NetMatrixClient
             {
                 foreach (JToken room in roomJToken.Children())
                 {
-                    JProperty roomJProperty = (JProperty) room;
-                    string roomId = roomJProperty.Name;
+                    var roomJProperty = (JProperty) room;
+                    var roomId = roomJProperty.Name;
 
                     if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
 
                     foreach (JToken message in room.First["timeline"]["events"].Children())
                     {
-                        string sender = (string)message["sender"];
-                        string body = (string)message["content"]["body"];
+                        var sender = (string)message["sender"];
+                        var body = (string)message["content"]["body"];
 
-                        MessageReceivedEventArgs messageArgs = new MessageReceivedEventArgs(roomId, body, sender);
+                        var messageArgs = new MessageReceivedEventArgs(roomId, body, sender);
                         MessageReceived?.Invoke(messageArgs);
                     }
                 }
@@ -362,12 +361,12 @@ namespace loc0NetMatrixClient
 
             if (inviteJToken.HasValues) //UNTESTED
             {
-                foreach (var room in inviteJToken.Children())
+                foreach (JToken room in inviteJToken.Children())
                 {
-                    JProperty roomIdJProperty = (JProperty) room;
+                    var roomIdJProperty = (JProperty) room;
                     var roomId = roomIdJProperty.Name;
 
-                    InviteReceivedEventArgs inviteArgs = new InviteReceivedEventArgs(roomId);
+                    var inviteArgs = new InviteReceivedEventArgs(roomId);
                     InviteReceived?.Invoke(inviteArgs);
                 }
             }

@@ -55,7 +55,7 @@ namespace loc0NetMatrixClient
         {
             var byteArrayContent = new ByteArrayContent(content);
             byteArrayContent.Headers.Add("Content-Type", contentType);
-            var response = await _client.PostAsync(new Uri(url), byteArrayContent);
+            HttpResponseMessage response = await _client.PostAsync(new Uri(url), byteArrayContent);
 
             return response;
         }
