@@ -96,30 +96,5 @@ namespace loc0NetMatrixClient
                 return false;
             }
         }
-
-        private async Task GetFileInfo(string url, string hostServer, string accessToken)
-        {
-            url = url.Replace("mxc://", "https://");
-
-            var p =
-                $"{hostServer}/_matrix/media/r0/preview_url?url={HttpUtility.UrlEncode(url)}&access_token={accessToken}";
-            var fileInfoResponse = await _backendHttpClient.Get(
-                $"{hostServer}/_matrix/media/r0/preview_url?url={HttpUtility.UrlEncode("https://matrix.org/docs/spec/client_server/r0.4.0.html#get-matrix-client-r0-sync")}&access_token={accessToken}");
-
-            try
-            {
-                fileInfoResponse.EnsureSuccessStatusCode();
-            }
-            catch (HttpRequestException ex)
-            {
-                Console.WriteLine(ex.Message);
-                return;
-            }
-
-            var fileInfoResponseContent = await fileInfoResponse.Content.ReadAsStringAsync();
-
-            JObject r = JObject.Parse(fileInfoResponseContent);
-            var q = r.ToString();
-        }
     }
 }
