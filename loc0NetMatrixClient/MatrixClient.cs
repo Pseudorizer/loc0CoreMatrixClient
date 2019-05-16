@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -212,6 +213,35 @@ namespace loc0NetMatrixClient
             return response[0];
         }
 
+        public async Task<string> Upload(string fileDirectory, string contentType)
+        {
+            if (!File.Exists(fileDirectory))
+                throw new ArgumentException("File not found", nameof(fileDirectory));
+
+            var filename = Path.GetFileNameWithoutExtension(fileDirectory);
+            var fileBytes = File.ReadAllBytes(fileDirectory);
+
+            var uploadResponse =
+                await _backendHttpClient.Post($"{HomeServer}/_matrix/media/r0/upload?filename={filename}&access_token={AccessToken}", fileBytes,
+                    contentType);
+
+            try
+            {
+                uploadResponse.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException)
+            {
+                return "Failed to upload";
+            }
+
+            var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
+
+            JObject uploadResponseJObject = JObject.Parse(uploadResponseContent);
+            var mxcUrl = (string)uploadResponseJObject["content_uri"];
+
+            return mxcUrl;
+        }
+
         /// <summary>
         /// Starts a message listener for any rooms you've joined
         /// </summary>
@@ -268,35 +298,15 @@ namespace loc0NetMatrixClient
 
                 JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
 
-                Console.WriteLine(syncResponseJObject.ToString());
-
                 nextBatch = (string)syncResponseJObject["next_batch"];
 
-                JToken roomJToken = syncResponseJObject["rooms"]["join"];
-
-                if (roomJToken.HasValues)
-                {
-                    foreach (var room in roomJToken.Children())
-                    {
-                        var e = (JProperty) room;
-
-                        var r = e.Name;
-
-                        var content = room.First["timeline"]["events"].Children().Children();
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("blah");
-                }
-
-                //await SyncRooms(nextBatch, firstSync);
+                await SyncRooms(nextBatch);
 
                 await Task.Delay(2000, _syncCancellationToken.Token);
             }
         }
 
-        private async Task SyncRooms(string nextBatch, bool firstSync)
+        private async Task SyncRooms(string nextBatch)
         {
             foreach (var room in _activeRoomsList)
             {
@@ -310,7 +320,7 @@ namespace loc0NetMatrixClient
 
                 room.PrevBatch = roomMessageParsed.Start;
 
-                if (roomMessageParsed.Chunk.Length == 0 || firstSync) continue;
+                if (roomMessageParsed.Chunk.Length == 0) continue;
 
                 foreach (var message in roomMessageParsed.Chunk)
                 {

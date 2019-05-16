@@ -30,7 +30,7 @@ namespace loc0NetMatrixClient
                 return await _client.SendAsync(request);
             }
         }
-        
+
         /// <summary>
         /// Wrapper for posting to a Matrix endpoint with content
         /// </summary>
@@ -41,10 +41,19 @@ namespace loc0NetMatrixClient
         {
             HttpResponseMessage response;
 
-            using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url)) {Content = new StringContent(content, Encoding.UTF8, "application/json")})
+            using (var request = new StringContent(content, Encoding.UTF8, "application/json"))
             {
-                response = await _client.SendAsync(request);
+                response = await _client.PostAsync(url, request);
             }
+
+            return response;
+        }
+
+        public async Task<HttpResponseMessage> Post(string url, byte[] content, string contentType)
+        {
+            var byteArrayContent = new ByteArrayContent(content);
+            byteArrayContent.Headers.Add("Content-Type", contentType);
+            var response = await _client.PostAsync(url, byteArrayContent);
 
             return response;
         }

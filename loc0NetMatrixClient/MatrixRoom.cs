@@ -15,9 +15,10 @@ namespace loc0NetMatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
         private readonly string _roomId;
+        public string accessToken; //fix
 
         /// <param name="roomId">ID of room you want to call</param>
-        public MatrixRoom(string roomId)
+        public MatrixRoom(string roomId, string accessToken = "")
         {
             _roomId = roomId;
         }
@@ -54,6 +55,16 @@ namespace loc0NetMatrixClient
             {
                 return false;
             }
+        }
+
+        public async Task<bool> SendMessage(string matrixFileUrl, string hostServer, string accessToken)
+        {
+
+        }
+
+        private async Task GetFileInfo(string url, string hostServer, string )
+        {
+            var fileInfoResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/media/r0/preview_url?url={url}")
         }
     }
 }
