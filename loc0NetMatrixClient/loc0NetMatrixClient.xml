@@ -86,6 +86,7 @@
             Join a single room
             </summary>
             <param name="roomToJoin">Room to join, can be alias or id</param>
+            <param name="retryFailure">If connecting to a room fails, it will retry until success</param>
             <returns>String denoting failure or success</returns>
         </member>
         <member name="M:loc0NetMatrixClient.MatrixClient.Upload(System.String,System.String)">
@@ -168,7 +169,7 @@
             <param name="accessToken">Your clients access token</param>
             <returns>Bool based on success or failure</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.SendFile(System.String,System.String,System.String)">
+        <member name="M:loc0NetMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)">
             <summary>
             Send a matrix file via a mxcUri
             </summary>

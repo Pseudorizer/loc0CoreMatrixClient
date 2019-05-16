@@ -19,7 +19,7 @@ namespace loc0NetMatrixClient
         /// <param name="roomId">ID of room you want to call</param>
         public MatrixRoom(string roomId)
         {
-            _roomId = roomId;
+            _roomId = HttpUtility.UrlEncode(roomId);
         }
 
         /// <summary>
@@ -31,11 +31,16 @@ namespace loc0NetMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> SendMessage(MatrixMessage message, string hostServer, string accessToken)
         {
-            JObject messageJObject = new JObject(
-                new JProperty("msgtype", message.Type ?? ""),
-                new JProperty("body", message.Body ?? ""),
-                new JProperty("format", message.Format ?? ""),
-                new JProperty("formatted_body", message.FormattedBody ?? ""));
+            JObject messageJObject = new JObject
+            {
+                ["msgtype"] = message.Type ?? "",
+
+                ["body"] = message.Body ?? "",
+
+                ["format"] = message.Format ?? "",
+
+                ["formatted_body"] = message.FormattedBody ?? ""
+            };
 
             if (!Regex.IsMatch(hostServer, @"^https:\/\/"))
             {
@@ -43,7 +48,7 @@ namespace loc0NetMatrixClient
             }
 
             var sendResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{HttpUtility.UrlEncode(_roomId)}/send/m.room.message?access_token={accessToken}", messageJObject.ToString());
+                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}", messageJObject.ToString());
 
             try
             {
@@ -60,17 +65,61 @@ namespace loc0NetMatrixClient
         /// Send a matrix file via a mxcUri
         /// </summary>
         /// <param name="matrixFileUrl">mxcUri of uploaded content</param>
+        /// <param name="filename"></param>
         /// <param name="hostServer"></param>
         /// <param name="accessToken"></param>
         /// <returns></returns>
-        public async Task<bool> SendFile(string matrixFileUrl, string hostServer, string accessToken)
+        public async Task<bool> SendImage(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
-            return true;
+            JObject messageJObject = new JObject
+            {
+                ["body"] = filename,
+
+                ["info"] = new JObject(),
+
+                ["msgtype"] = "m.image",
+
+                ["url"] = matrixFileUrl
+            };
+
+            var sendImageResponse = await _backendHttpClient.Post(
+                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}",
+                messageJObject.ToString());
+
+            try
+            {
+                sendImageResponse.EnsureSuccessStatusCode();
+                return true;
+            }
+            catch (HttpRequestException)
+            {
+                return false;
+            }
         }
 
-        private async Task GetFileInfo(string url, string hostServer)
+        private async Task GetFileInfo(string url, string hostServer, string accessToken)
         {
-            var fileInfoResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/media/r0/preview_url?url={url}");
+            url = url.Replace("mxc://", "https://");
+
+            var p =
+                $"{hostServer}/_matrix/media/r0/preview_url?url={HttpUtility.UrlEncode(url)}&access_token={accessToken}";
+            var fileInfoResponse = await _backendHttpClient.Get(
+                $"{hostServer}/_matrix/media/r0/preview_url?url={HttpUtility.UrlEncode("https://matrix.org/docs/spec/client_server/r0.4.0.html#get-matrix-client-r0-sync")}&access_token={accessToken}");
+
+            try
+            {
+                fileInfoResponse.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine(ex.Message);
+                return;
+            }
+
+            var fileInfoResponseContent = await fileInfoResponse.Content.ReadAsStringAsync();
+
+            JObject r = JObject.Parse(fileInfoResponseContent);
+            var q = r.ToString();
         }
     }
 }

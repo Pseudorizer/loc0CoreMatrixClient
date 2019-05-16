@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -67,25 +69,31 @@ namespace loc0NetMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> Login(string host, MatrixCredentials credentials)
         {
-            var loginJson = new JObject(
-                new JProperty("type", "m.login.password"),
-                new JProperty("identifier",
-                    new JObject(
-                        new JProperty("type", "m.id.user"),
-                        new JProperty("user", credentials.UserName))),
-                new JProperty("password", credentials.Password),
-                new JProperty("initial_device_display_name", credentials.UserName),
-                new JProperty("device_id", credentials.DeviceId));
+            JObject loginJObject = new JObject
+            {
+                ["type"] = "m.login.password",
 
-            var loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJson.ToString());
+                ["identifier"] = new JObject
+                {
+                    ["type"] = "m.id.user",
+                    ["user"] = credentials.UserName ?? ""
+                },
+
+                ["password"] = credentials.Password ?? "",
+
+                ["initial_device_display_name"] = credentials.DeviceName ?? "",
+
+                ["device_id"] = credentials.DeviceId ?? ""
+            };
+
+            var loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJObject.ToString());
 
             try
             {
                 loginResponse.EnsureSuccessStatusCode();
             }
-            catch (HttpRequestException ex)
+            catch (HttpRequestException)
             {
-                Console.WriteLine(ex.Message);
                 return false;
             }
 
@@ -103,29 +111,36 @@ namespace loc0NetMatrixClient
 
             UserId = loginResponseJson.UserId;
 
-            JObject filterJObject = new JObject(
-                new JProperty("room",
-                    new JObject(
-                        new JProperty("state",
-                            new JObject(
-                                new JProperty("not_types",
-                                    new JArray("*")))),
-                        new JProperty("timeline",
-                            new JObject(
-                                new JProperty("limit", _messageLimit),
-                                new JProperty("types",
-                                    new JArray("m.room.message")))),
-                        new JProperty("ephemeral",
-                            new JObject(
-                                new JProperty("not_types",
-                                    new JArray("*")))))),
-                new JProperty("presence",
-                    new JObject(
-                        new JProperty("not_types",
-                            new JArray("*")))),
-                new JProperty("event_format", "client"),
-                new JProperty("event_fields",
-                    new JArray("content"))); //replace with an object at some point, not easy to understand
+            JObject filterJObject = new JObject
+            {
+                ["room"] = new JObject
+                {
+                    ["state"] = new JObject
+                    {
+                        ["not_types"] = new JArray("*")
+                    },
+
+                    ["timeline"] = new JObject
+                    {
+                        ["limit"] = _messageLimit,
+                        ["types"] = new JArray("m.room.message")
+                    },
+
+                    ["ephemeral"] = new JObject
+                    {
+                        ["not_types"] = new JArray("*")
+                    }
+                },
+
+                ["presence"] = new JObject
+                {
+                    ["not_types"] = new JArray("*")
+                },
+
+                ["event_format"] = "client",
+
+                ["event_fields"] = new JArray("content", "sender")
+            };
 
             var filterUrl = $"{HomeServer}/_matrix/client/r0/user/{UserId}/filter?access_token={AccessToken}";
 
@@ -265,12 +280,12 @@ namespace loc0NetMatrixClient
         /// <returns></returns>
         private async Task Sync() //break this up in the future, for now it's fine
         {
-            var firstSyncResponse = await _backendHttpClient.Get(
+            HttpResponseMessage firstSyncResponse = await _backendHttpClient.Get(
                 $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&access_token={AccessToken}");
 
             try
             {
-                firstSyncResponse.EnsureSuccessStatusCode();
+                firstSyncResponse.EnsureSuccessStatusCode(); //don't like this repeating code
             }
             catch (HttpRequestException)
             {
@@ -278,16 +293,16 @@ namespace loc0NetMatrixClient
                 return;
             }
 
-            var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
+            string firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
 
             JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
-            var nextBatch = (string)firstSyncJObject["next_batch"];
+            string nextBatch = (string)firstSyncJObject["next_batch"];
 
             await Task.Delay(2000);
 
             while (!_syncCancellationToken.IsCancellationRequested)
             {
-                var syncResponseMessage = await _backendHttpClient.Get(
+                HttpResponseMessage syncResponseMessage = await _backendHttpClient.Get(
                     $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&since={nextBatch}&access_token={AccessToken}");
 
                 try
@@ -300,41 +315,35 @@ namespace loc0NetMatrixClient
                     return;
                 }
 
-                var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
+                string syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
 
                 JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
 
+                JToken roomJToken = syncResponseJObject["rooms"]["join"];
+
+                if (roomJToken.HasValues) //Process new messages
+                {
+                    foreach (JToken room in roomJToken.Children())
+                    {
+                        JProperty roomJProperty = (JProperty) room;
+                        string roomId = roomJProperty.Name;
+
+                        if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
+
+                        foreach (JToken message in room.First["timeline"]["events"].Children())
+                        {
+                            string sender = (string)message["sender"];
+                            string body = (string)message["content"]["body"];
+
+                            MessageReceivedEventArgs messageArgs = new MessageReceivedEventArgs(roomId, body, sender);
+                            MessageReceived?.Invoke(messageArgs);
+                        }
+                    }
+                }
+
                 nextBatch = (string)syncResponseJObject["next_batch"];
 
-                await SyncRooms(nextBatch);
-
                 await Task.Delay(2000, _syncCancellationToken.Token);
-            }
-        }
-
-        private async Task SyncRooms(string nextBatch)
-        {
-            foreach (var room in _activeRoomsList)
-            {
-                var messageResponseMessage = await _backendHttpClient.Get(
-                    $"{HomeServer}/_matrix/client/r0/rooms/{HttpUtility.UrlEncode(room.ChannelId)}/messages?from={nextBatch}&filter={_filterString}&dir=b&to={room.PrevBatch}&access_token={AccessToken}");
-
-                var messageResponseMessageContent = await messageResponseMessage.Content.ReadAsStringAsync();
-
-                var roomMessageParsed =
-                    JsonConvert.DeserializeObject<RoomMessageJson>(messageResponseMessageContent);
-
-                room.PrevBatch = roomMessageParsed.Start;
-
-                if (roomMessageParsed.Chunk.Length == 0) continue;
-
-                foreach (var message in roomMessageParsed.Chunk)
-                {
-                    if (message.Content == null) continue;
-
-                    MessageReceivedEventArgs messageArg = new MessageReceivedEventArgs(message.RoomId, message.Content.Body, message.Sender);
-                    MessageReceived?.Invoke(messageArg);
-                }
             }
         }
     }
