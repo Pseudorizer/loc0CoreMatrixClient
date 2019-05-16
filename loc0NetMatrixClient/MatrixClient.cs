@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -233,11 +232,11 @@ namespace loc0NetMatrixClient
         /// <param name="fileDirectory">Path to the file you want to upload</param>
         /// <param name="contentType">Content type, I.E. image/png</param>
         /// <returns>mxcUri for later use</returns>
-        /// <exception cref="ArgumentException"></exception>
-        public async Task<string> Upload(string fileDirectory, string contentType)
+        /// <exception cref="FileNotFoundException"></exception>
+        public async Task<string> Upload(string fileDirectory, string contentType = "")
         {
             if (!File.Exists(fileDirectory))
-                throw new ArgumentException("File not found", nameof(fileDirectory));
+                throw new FileNotFoundException("File not found", Path.GetFileName(fileDirectory));
 
             var filename = Path.GetFileNameWithoutExtension(fileDirectory);
             var fileBytes = File.ReadAllBytes(fileDirectory);

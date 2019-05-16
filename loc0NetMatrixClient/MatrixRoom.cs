@@ -1,5 +1,4 @@
-﻿using System;
-using System.Net.Http;
+﻿using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
@@ -65,10 +64,10 @@ namespace loc0NetMatrixClient
         /// Send a matrix file via a mxcUri
         /// </summary>
         /// <param name="matrixFileUrl">mxcUri of uploaded content</param>
-        /// <param name="filename"></param>
+        /// <param name="filename">Filename people will see in chat, doesn't actually change the filename when downloading</param>
         /// <param name="hostServer"></param>
         /// <param name="accessToken"></param>
-        /// <returns></returns>
+        /// <returns>Bool based on success or failure</returns>
         public async Task<bool> SendImage(string matrixFileUrl, string filename, string hostServer, string accessToken)
         {
             JObject messageJObject = new JObject

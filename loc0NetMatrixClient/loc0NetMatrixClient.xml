@@ -96,7 +96,7 @@
             <param name="fileDirectory">Path to the file you want to upload</param>
             <param name="contentType">Content type, I.E. image/png</param>
             <returns>mxcUri for later use</returns>
-            <exception cref="T:System.ArgumentException"></exception>
+            <exception cref="T:System.IO.FileNotFoundException"></exception>
         </member>
         <member name="M:loc0NetMatrixClient.MatrixClient.StartListener">
             <summary>
@@ -174,9 +174,10 @@
             Send a matrix file via a mxcUri
             </summary>
             <param name="matrixFileUrl">mxcUri of uploaded content</param>
+            <param name="filename">Filename people will see in chat, doesn't actually change the filename when downloading</param>
             <param name="hostServer"></param>
             <param name="accessToken"></param>
-            <returns></returns>
+            <returns>Bool based on success or failure</returns>
         </member>
         <member name="T:loc0NetMatrixClient.Models.LoginJson">
             <summary>
