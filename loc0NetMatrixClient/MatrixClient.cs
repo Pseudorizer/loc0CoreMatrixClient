@@ -160,8 +160,7 @@ namespace loc0NetMatrixClient
             }
             catch (HttpRequestException)
             {
-                Console.WriteLine("Failed to upload filters\nAborting");
-                Environment.Exit(1);
+                return false;
             }
 
             var filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
@@ -200,9 +199,8 @@ namespace loc0NetMatrixClient
                     JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
                     _activeRoomsList.Add(new MatrixChannel((string)roomResponseJObject["room_id"]));
                 }
-                catch (HttpRequestException ex)
+                catch (HttpRequestException)
                 {
-                    Console.WriteLine(ex.Message);
                     responseList.Add($"Failed to Join {room}");
 
                     if (retryFailure)
