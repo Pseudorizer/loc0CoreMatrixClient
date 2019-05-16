@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -227,12 +229,30 @@ namespace loc0NetMatrixClient
         /// <returns></returns>
         private async Task Sync() //break this up in the future, for now it's fine
         {
-            var firstSync = true; //feel there may be a better way
+            var firstSyncResponse = await _backendHttpClient.Get(
+                $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&access_token={AccessToken}");
+
+            try
+            {
+                firstSyncResponse.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine("Sync failed");
+                return;
+            }
+
+            var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
+
+            JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
+            var nextBatch = (string)firstSyncJObject["next_batch"];
+
+            await Task.Delay(2000);
 
             while (!_syncCancellationToken.IsCancellationRequested)
             {
                 var syncResponseMessage = await _backendHttpClient.Get(
-                    $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&access_token={AccessToken}");
+                    $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&since={nextBatch}&access_token={AccessToken}");
 
                 try
                 {
@@ -247,21 +267,30 @@ namespace loc0NetMatrixClient
                 var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
 
                 JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
-                var nextBatch = (string)syncResponseJObject["next_batch"];
 
-                JToken t = syncResponseJObject["rooms"]["join"];
+                Console.WriteLine(syncResponseJObject.ToString());
 
-                foreach (var jToken in t.First)
+                nextBatch = (string)syncResponseJObject["next_batch"];
+
+                JToken roomJToken = syncResponseJObject["rooms"]["join"];
+
+                if (roomJToken.HasValues)
                 {
-                    var f = jToken["timeline"]["events"];
-                    var r = f.ToString();
+                    foreach (var room in roomJToken.Children())
+                    {
+                        var e = (JProperty) room;
+
+                        var r = e.Name;
+
+                        var content = room.First["timeline"]["events"].Children().Children();
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("blah");
                 }
 
-                var e = t.ToString();
-
-                await SyncRooms(nextBatch, firstSync);
-
-                if (firstSync) firstSync = false;
+                //await SyncRooms(nextBatch, firstSync);
 
                 await Task.Delay(2000, _syncCancellationToken.Token);
             }
