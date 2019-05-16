@@ -8,10 +8,10 @@ If you find this right now, this is **very early** development. Very early in a 
 * Figure out syncing
 * Create a listener for messages
 * Create a class for interacting with rooms
-
-# Todo
 * Upload content
 * Allow joining rooms from invites
+
+# Todo
 * Allow encryption to be used
 * Whatever the future tells me to do!
 
