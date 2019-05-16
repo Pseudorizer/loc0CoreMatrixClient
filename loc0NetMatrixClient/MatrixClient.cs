@@ -160,8 +160,7 @@ namespace loc0NetMatrixClient
             }
             catch (HttpRequestException)
             {
-                Console.WriteLine("Failed to upload filters\nAborting");
-                Environment.Exit(1);
+                return false;
             }
 
             var filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
