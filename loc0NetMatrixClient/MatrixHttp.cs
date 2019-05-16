@@ -36,12 +36,13 @@ namespace loc0NetMatrixClient
         /// </summary>
         /// <param name="url">Endpoint</param>
         /// <param name="content">Content to be posted</param>
+        /// <param name="contentType">Content type, defaults to application/json</param>
         /// <returns>HttpResponseMessage for consumption</returns>
-        public async Task<HttpResponseMessage> Post(string url, string content)
+        public async Task<HttpResponseMessage> Post(string url, string content, string contentType = "application/json")
         {
             HttpResponseMessage response;
 
-            using (var request = new StringContent(content, Encoding.UTF8, "application/json"))
+            using (var request = new StringContent(content, Encoding.UTF8, contentType))
             {
                 response = await _client.PostAsync(url, request);
             }
@@ -49,6 +50,13 @@ namespace loc0NetMatrixClient
             return response;
         }
 
+        /// <summary>
+        /// Wrapper for posting to a Matrix endpoint with a byte[]
+        /// </summary>
+        /// <param name="url">Endpoint</param>
+        /// <param name="content">Content as a byte[] to be posted</param>
+        /// <param name="contentType">Content type</param>
+        /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url, byte[] content, string contentType)
         {
             var byteArrayContent = new ByteArrayContent(content);

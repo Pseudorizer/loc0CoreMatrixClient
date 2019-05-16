@@ -202,6 +202,7 @@ namespace loc0NetMatrixClient
         /// Join a single room
         /// </summary>
         /// <param name="roomToJoin">Room to join, can be alias or id</param>
+        /// <param name="retryFailure">If connecting to a room fails, it will retry until success</param>
         /// <returns>String denoting failure or success</returns>
         public async Task<string> JoinRoom(string roomToJoin, bool retryFailure = false)
         {
@@ -213,6 +214,13 @@ namespace loc0NetMatrixClient
             return response[0];
         }
 
+        /// <summary>
+        /// Upload a file to Matrix
+        /// </summary>
+        /// <param name="fileDirectory">Path to the file you want to upload</param>
+        /// <param name="contentType">Content type, I.E. image/png</param>
+        /// <returns>mxcUri for later use</returns>
+        /// <exception cref="ArgumentException"></exception>
         public async Task<string> Upload(string fileDirectory, string contentType)
         {
             if (!File.Exists(fileDirectory))

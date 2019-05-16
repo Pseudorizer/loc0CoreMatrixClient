@@ -15,10 +15,9 @@ namespace loc0NetMatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
         private readonly string _roomId;
-        public string accessToken; //fix
 
         /// <param name="roomId">ID of room you want to call</param>
-        public MatrixRoom(string roomId, string accessToken = "")
+        public MatrixRoom(string roomId)
         {
             _roomId = roomId;
         }
@@ -57,14 +56,21 @@ namespace loc0NetMatrixClient
             }
         }
 
-        public async Task<bool> SendMessage(string matrixFileUrl, string hostServer, string accessToken)
+        /// <summary>
+        /// Send a matrix file via a mxcUri
+        /// </summary>
+        /// <param name="matrixFileUrl">mxcUri of uploaded content</param>
+        /// <param name="hostServer"></param>
+        /// <param name="accessToken"></param>
+        /// <returns></returns>
+        public async Task<bool> SendFile(string matrixFileUrl, string hostServer, string accessToken)
         {
-
+            return true;
         }
 
-        private async Task GetFileInfo(string url, string hostServer, string )
+        private async Task GetFileInfo(string url, string hostServer)
         {
-            var fileInfoResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/media/r0/preview_url?url={url}")
+            var fileInfoResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/media/r0/preview_url?url={url}");
         }
     }
 }
