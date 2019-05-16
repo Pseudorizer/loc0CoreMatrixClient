@@ -1,6 +1,5 @@
 using System;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,11 +12,6 @@ namespace loc0NetMatrixClient
     {
         private readonly HttpClient _client = new HttpClient();
 
-        public MatrixHttp()
-        {
-            _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        }
-        
         /// <summary>
         /// Wrapper for posting to a Matrix endpoint without content
         /// </summary>
@@ -44,7 +38,7 @@ namespace loc0NetMatrixClient
 
             using (var request = new StringContent(content, Encoding.UTF8, contentType))
             {
-                response = await _client.PostAsync(url, request);
+                response = await _client.PostAsync(new Uri(url), request);
             }
 
             return response;
@@ -61,7 +55,7 @@ namespace loc0NetMatrixClient
         {
             var byteArrayContent = new ByteArrayContent(content);
             byteArrayContent.Headers.Add("Content-Type", contentType);
-            var response = await _client.PostAsync(url, byteArrayContent);
+            var response = await _client.PostAsync(new Uri(url), byteArrayContent);
 
             return response;
         }
@@ -73,14 +67,13 @@ namespace loc0NetMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Get(string url) => await _client.GetAsync(new Uri(url));
 
-        public async Task<HttpResponseMessage> Put(string url, string content)
+        public async Task<HttpResponseMessage> Put(string url, string content, string contentType = "application/json")
         {
             HttpResponseMessage response;
 
-            using (var request = new HttpRequestMessage(HttpMethod.Put, new Uri(url))
-                {Content = new StringContent(content, Encoding.UTF8, "application/json")})
+            using (var messageContent = new StringContent(content, Encoding.UTF8, contentType))
             {
-                response = await _client.SendAsync(request);
+                response = await _client.PutAsync(new Uri(url), messageContent);
             }
 
             return response;
