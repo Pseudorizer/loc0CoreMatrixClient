@@ -11,6 +11,7 @@ using loc0NetMatrixClient.Events;
 using loc0NetMatrixClient.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using MimeTypes; //credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
 
 namespace loc0NetMatrixClient
 {
@@ -24,7 +25,6 @@ namespace loc0NetMatrixClient
         private readonly CancellationTokenSource _syncCancellationToken = new CancellationTokenSource();
         private readonly int _messageLimit;
         private string _filterId;
-        private string _filterString;
 
         /// <summary>
         /// AccessToken to be used when interacting with the API
@@ -55,10 +55,18 @@ namespace loc0NetMatrixClient
         /// <inheritdoc />
         public delegate void MessageReceivedEvent(MessageReceivedEventArgs args);
 
+        /// <inheritdoc />
+        public delegate void InviteReceivedEvent(InviteReceivedEventArgs args);
+
         /// <summary>
         /// Event for any incoming messages
         /// </summary>
         public event MessageReceivedEvent MessageReceived;
+
+        /// <summary>
+        /// Event for any incoming invites
+        /// </summary>
+        public event InviteReceivedEvent InviteReceived;
 
         /// <summary>
         /// Login to a Matrix account
@@ -161,7 +169,6 @@ namespace loc0NetMatrixClient
             JObject filterJObjectParsed = JObject.Parse(filterResponseContent);
 
             _filterId = (string)filterJObjectParsed["filter_id"];
-            _filterString = filterJObject.ToString();
 
             return true;
         }
@@ -184,7 +191,7 @@ namespace loc0NetMatrixClient
                 var requestUrl =
                     $"{HomeServer}/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}?access_token={AccessToken}";
 
-                var roomResponse = await _backendHttpClient.Post(requestUrl);
+                HttpResponseMessage roomResponse = await _backendHttpClient.Post(requestUrl);
 
                 try
                 {
@@ -218,7 +225,7 @@ namespace loc0NetMatrixClient
         /// <returns>String denoting failure or success</returns>
         public async Task<string> JoinRoom(string roomToJoin, bool retryFailure = false)
         {
-            var response = await JoinRooms(new List<string>
+            List<string> response = await JoinRooms(new List<string>
             {
                 roomToJoin
             }, retryFailure);
@@ -230,18 +237,18 @@ namespace loc0NetMatrixClient
         /// Upload a file to Matrix
         /// </summary>
         /// <param name="fileDirectory">Path to the file you want to upload</param>
-        /// <param name="contentType">Content type, I.E. image/png</param>
         /// <returns>mxcUri for later use</returns>
         /// <exception cref="FileNotFoundException"></exception>
-        public async Task<string> Upload(string fileDirectory, string contentType = "")
+        public async Task<string> Upload(string fileDirectory)
         {
             if (!File.Exists(fileDirectory))
                 throw new FileNotFoundException("File not found", Path.GetFileName(fileDirectory));
 
+            var contentType = MimeTypeMap.GetMimeType(Path.GetExtension(fileDirectory));
             var filename = Path.GetFileNameWithoutExtension(fileDirectory);
             var fileBytes = File.ReadAllBytes(fileDirectory);
 
-            var uploadResponse =
+            HttpResponseMessage uploadResponse =
                 await _backendHttpClient.Post($"{HomeServer}/_matrix/media/r0/upload?filename={filename}&access_token={AccessToken}", fileBytes,
                     contentType);
 
@@ -311,38 +318,58 @@ namespace loc0NetMatrixClient
                 catch (HttpRequestException)
                 {
                     Console.WriteLine("Sync failed");
-                    return;
+                    await Task.Delay(2000, _syncCancellationToken.Token);
+                    continue;
                 }
 
                 string syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
 
                 JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
 
-                JToken roomJToken = syncResponseJObject["rooms"]["join"];
-
-                if (roomJToken.HasValues) //Process new messages
-                {
-                    foreach (JToken room in roomJToken.Children())
-                    {
-                        JProperty roomJProperty = (JProperty) room;
-                        string roomId = roomJProperty.Name;
-
-                        if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
-
-                        foreach (JToken message in room.First["timeline"]["events"].Children())
-                        {
-                            string sender = (string)message["sender"];
-                            string body = (string)message["content"]["body"];
-
-                            MessageReceivedEventArgs messageArgs = new MessageReceivedEventArgs(roomId, body, sender);
-                            MessageReceived?.Invoke(messageArgs);
-                        }
-                    }
-                }
-
                 nextBatch = (string)syncResponseJObject["next_batch"];
 
+                await Task.Run(() => SyncChecks(syncResponseJObject));
+
                 await Task.Delay(2000, _syncCancellationToken.Token);
+            }
+        }
+
+        private void SyncChecks(JObject syncJObject)
+        {
+            JToken roomJToken = syncJObject["rooms"]["join"];
+
+            if (roomJToken.HasValues) //Process new messages
+            {
+                foreach (JToken room in roomJToken.Children())
+                {
+                    JProperty roomJProperty = (JProperty) room;
+                    string roomId = roomJProperty.Name;
+
+                    if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
+
+                    foreach (JToken message in room.First["timeline"]["events"].Children())
+                    {
+                        string sender = (string)message["sender"];
+                        string body = (string)message["content"]["body"];
+
+                        MessageReceivedEventArgs messageArgs = new MessageReceivedEventArgs(roomId, body, sender);
+                        MessageReceived?.Invoke(messageArgs);
+                    }
+                }
+            }
+
+            JToken inviteJToken = syncJObject["rooms"]["invite"];
+
+            if (inviteJToken.HasValues) //UNTESTED
+            {
+                foreach (var room in inviteJToken.Children())
+                {
+                    JProperty roomIdJProperty = (JProperty) room;
+                    var roomId = roomIdJProperty.Name;
+
+                    InviteReceivedEventArgs inviteArgs = new InviteReceivedEventArgs(roomId);
+                    InviteReceived?.Invoke(inviteArgs);
+                }
             }
         }
     }
