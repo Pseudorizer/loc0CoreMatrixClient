@@ -1,4 +1,4 @@
-# loc0NetMatrixClient
+# loc0CoreMatrixClient
 A Lightweight Matrix Client Built With .Net Core
 
 This is a lightweight client for interacting with the Matrix API. It can be used to create simple bots that recieved and send text/formatted messages, images, accept invites etc. I made this for personal use after I had to port a Discord bot of mine over to Riot. Also still a pretty newb programmer so if you want to improve this anyway feel free.
