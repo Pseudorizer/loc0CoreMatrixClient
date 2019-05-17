@@ -3,10 +3,10 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
-using loc0NetMatrixClient.Models;
+using loc0CoreMatrixClient.Models;
 using Newtonsoft.Json.Linq;
 
-namespace loc0NetMatrixClient
+namespace loc0CoreMatrixClient
 {
     /// <summary>
     /// Creates an instance of a matrix room allowing for interaction with said room

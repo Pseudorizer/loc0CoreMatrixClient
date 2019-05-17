@@ -1,4 +1,4 @@
-﻿namespace loc0NetMatrixClient.Models
+﻿namespace loc0CoreMatrixClient.Models
 {
     /// <summary>
     /// Defines an object for storing a messages information

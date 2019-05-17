@@ -7,13 +7,14 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
-using loc0NetMatrixClient.Events;
-using loc0NetMatrixClient.Models;
-using Newtonsoft.Json;
+using loc0CoreMatrixClient.Events;
+using loc0CoreMatrixClient.Models;
+using MimeTypes;
 using Newtonsoft.Json.Linq;
-using MimeTypes; //credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
 
-namespace loc0NetMatrixClient
+//credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
+
+namespace loc0CoreMatrixClient
 {
     /// <summary>
     /// Client for interacting with the Matrix API

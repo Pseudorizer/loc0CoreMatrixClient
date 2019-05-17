@@ -2,10 +2,12 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp2.2</TargetFramework>
+        <AssemblyName>loc0CoreMatrixClient</AssemblyName>
+        <RootNamespace>loc0CoreMatrixClient</RootNamespace>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-      <DocumentationFile>C:\Users\kaleb\Source\Repos\MiniCheese26\loc0NetMatrixClient\loc0NetMatrixClient\loc0NetMatrixClient.xml</DocumentationFile>
+      <DocumentationFile>C:\Users\kaleb\Source\Repos\MiniCheese26\loc0CoreMatrixClient\loc0CoreMatrixClient\loc0CoreMatrixClient.xml</DocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>

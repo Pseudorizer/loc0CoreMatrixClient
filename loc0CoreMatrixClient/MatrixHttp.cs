@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace loc0NetMatrixClient
+namespace loc0CoreMatrixClient
 {
     /// <summary>
     /// Methods for communicating with the Matrix API
