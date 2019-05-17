@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
@@ -79,11 +78,11 @@ namespace loc0NetMatrixClient
         {
             var textJObject = new JObject
             {
-                ["msgtype"] = textMessage.Type ?? "",
+                ["msgtype"] = "m.text",
 
                 ["body"] = textMessage.Body ?? "",
 
-                ["format"] = textMessage.Format ?? "",
+                ["format"] = string.IsNullOrWhiteSpace(textMessage.FormattedBody) ? "org.matrix.custom.html" : "",
 
                 ["formatted_body"] = textMessage.FormattedBody ?? ""
             };

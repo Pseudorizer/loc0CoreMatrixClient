@@ -46,12 +46,6 @@ namespace loc0NetMatrixClient
         /// </summary>
         public string UserId { get; private set; }
 
-        /// <param name="messageLimit">Number of messages to take on each sync</param>
-        public MatrixClient(int messageLimit = 10)
-        {
-            _messageLimit = messageLimit;
-        }
-
         /// <inheritdoc />
         public delegate void MessageReceivedEvent(MessageReceivedEventArgs args);
 
@@ -67,6 +61,12 @@ namespace loc0NetMatrixClient
         /// Event for any incoming invites
         /// </summary>
         public event InviteReceivedEvent InviteReceived;
+
+        /// <param name="messageLimit">Number of messages to take on each sync</param>
+        public MatrixClient(int messageLimit = 10)
+        {
+            _messageLimit = messageLimit;
+        }
 
         /// <summary>
         /// Login to a Matrix account
@@ -104,19 +104,19 @@ namespace loc0NetMatrixClient
                 return false;
             }
 
-            var loginResponseJson = JsonConvert.DeserializeObject<LoginJson>(
-                await loginResponse.Content.ReadAsStringAsync());
+            var loginResponseContent = await loginResponse.Content.ReadAsStringAsync();
 
-            AccessToken = loginResponseJson.AccessToken;
-            DeviceId = loginResponseJson.DeviceId;
-            HomeServer = loginResponseJson.HomeServer;
+            var loginResponseJObject = JObject.Parse(loginResponseContent);
+
+            AccessToken = (string) loginResponseJObject["access_token"];
+            DeviceId = (string) loginResponseJObject["device_id"];
+            HomeServer = (string) loginResponseJObject["home_server"];
+            UserId = (string) loginResponseJObject["user_id"];
 
             if (!Regex.IsMatch(HomeServer, @"^https:\/\/"))
             {
                 HomeServer = "https://" + HomeServer;
             }
-
-            UserId = loginResponseJson.UserId;
 
             JObject filterJObject = new JObject
             {
@@ -178,11 +178,11 @@ namespace loc0NetMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> Logout()
         {
-            var q = await _backendHttpClient.Post($"{HomeServer}/_matrix/client/r0/logout?access_token={AccessToken}");
+            HttpResponseMessage logoutResponse = await _backendHttpClient.Post($"{HomeServer}/_matrix/client/r0/logout?access_token={AccessToken}");
 
             try
             {
-                q.EnsureSuccessStatusCode();
+                logoutResponse.EnsureSuccessStatusCode();
             }
             catch (HttpRequestException)
             {
@@ -226,11 +226,13 @@ namespace loc0NetMatrixClient
                 }
                 catch (HttpRequestException)
                 {
-                    responseList.Add($"Failed to Join {room}");
-
                     if (retryFailure)
                     {
                         i = i == 0 ? 0 : i - 1;
+                    }
+                    else
+                    {
+                        responseList.Add($"Failed to Join {room}");
                     }
                 }
 
@@ -259,17 +261,17 @@ namespace loc0NetMatrixClient
         /// <summary>
         /// Upload a file to Matrix
         /// </summary>
-        /// <param name="fileDirectory">Path to the file you want to upload</param>
+        /// <param name="filePath">Path to the file you want to upload</param>
         /// <returns>mxcUri for later use</returns>
         /// <exception cref="FileNotFoundException"></exception>
-        public async Task<string> Upload(string fileDirectory)
+        public async Task<string> Upload(string filePath)
         {
-            if (!File.Exists(fileDirectory))
-                throw new FileNotFoundException("File not found", Path.GetFileName(fileDirectory));
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("File not found", Path.GetFileName(filePath));
 
-            var contentType = MimeTypeMap.GetMimeType(Path.GetExtension(fileDirectory));
-            var filename = Path.GetFileNameWithoutExtension(fileDirectory);
-            var fileBytes = File.ReadAllBytes(fileDirectory);
+            var contentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath));
+            var filename = Path.GetFileName(filePath);
+            var fileBytes = File.ReadAllBytes(filePath);
 
             HttpResponseMessage uploadResponse =
                 await _backendHttpClient.Post($"{HomeServer}/_matrix/media/r0/upload?filename={filename}&access_token={AccessToken}", fileBytes,
@@ -287,7 +289,7 @@ namespace loc0NetMatrixClient
             var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
 
             JObject uploadResponseJObject = JObject.Parse(uploadResponseContent);
-            var mxcUrl = (string)uploadResponseJObject["content_uri"];
+            var mxcUrl = (string) uploadResponseJObject["content_uri"];
 
             return mxcUrl;
         }
@@ -309,25 +311,13 @@ namespace loc0NetMatrixClient
         /// <returns></returns>
         private async Task Sync() //break this up in the future, for now it's fine
         {
-            HttpResponseMessage firstSyncResponse = await _backendHttpClient.Get(
-                $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&access_token={AccessToken}");
+            var nextBatch = string.Empty;
 
-            try
+            while (string.IsNullOrWhiteSpace(nextBatch))
             {
-                firstSyncResponse.EnsureSuccessStatusCode(); //don't like this repeating code
+                nextBatch = await FirstSync();
+                await Task.Delay(2000);
             }
-            catch (HttpRequestException)
-            {
-                Console.WriteLine("Sync failed");
-                return;
-            }
-
-            var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
-
-            JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
-            var nextBatch = (string)firstSyncJObject["next_batch"];
-
-            await Task.Delay(2000);
 
             while (!_syncCancellationToken.IsCancellationRequested)
             {
@@ -350,10 +340,31 @@ namespace loc0NetMatrixClient
 
                 nextBatch = (string)syncResponseJObject["next_batch"];
 
-                await Task.Run(() => SyncChecks(syncResponseJObject));
+                SyncChecks(syncResponseJObject);
 
                 await Task.Delay(2000, _syncCancellationToken.Token);
             }
+        }
+
+        private async Task<string> FirstSync()
+        {
+            HttpResponseMessage firstSyncResponse = await _backendHttpClient.Get(
+                $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&access_token={AccessToken}");
+
+            try
+            {
+                firstSyncResponse.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException)
+            {
+                Console.WriteLine("Initial Sync failed");
+                return "";
+            }
+
+            var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
+
+            JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
+            return (string) firstSyncJObject["next_batch"];
         }
 
         private void SyncChecks(JObject syncJObject)

@@ -120,7 +120,7 @@
             <summary>
             Upload a file to Matrix
             </summary>
-            <param name="fileDirectory">Path to the file you want to upload</param>
+            <param name="filePath">Path to the file you want to upload</param>
             <returns>mxcUri for later use</returns>
             <exception cref="T:System.IO.FileNotFoundException"></exception>
         </member>
@@ -185,12 +185,12 @@
         </member>
         <member name="P:loc0NetMatrixClient.MatrixRoom.RoomId">
             <summary>
-            
+            Room id for room
             </summary>
         </member>
         <member name="P:loc0NetMatrixClient.MatrixRoom.RoomAlias">
             <summary>
-            
+            Room alias for room
             </summary>
         </member>
         <member name="M:loc0NetMatrixClient.MatrixRoom.#ctor(System.String,System.String)">
@@ -267,16 +267,6 @@
         <member name="T:loc0NetMatrixClient.Models.MatrixTextMessage">
             <summary>
             Defines an object for storing a messages information
-            </summary>
-        </member>
-        <member name="P:loc0NetMatrixClient.Models.MatrixTextMessage.Type">
-            <summary>
-            Message type I.E. m.text
-            </summary>
-        </member>
-        <member name="P:loc0NetMatrixClient.Models.MatrixTextMessage.Format">
-            <summary>
-            Format of the information I.E. org.matrix.custom.html
             </summary>
         </member>
         <member name="P:loc0NetMatrixClient.Models.MatrixTextMessage.FormattedBody">
