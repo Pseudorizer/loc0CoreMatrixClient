@@ -94,6 +94,12 @@
             <param name="credentials">MatrixCredentials object that contains login info</param>
             <returns>Bool based on success or failure</returns>
         </member>
+        <member name="M:loc0NetMatrixClient.MatrixClient.Logout">
+            <summary>
+            Logout of your current account, resets all properties
+            </summary>
+            <returns>Bool based on success or failure</returns>
+        </member>
         <member name="M:loc0NetMatrixClient.MatrixClient.JoinRooms(System.Collections.Generic.List{System.String},System.Boolean)">
             <summary>
             Join multiple rooms via a list
@@ -177,8 +183,19 @@
             Creates an instance of a matrix room allowing for interaction with said room
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.#ctor(System.String)">
+        <member name="P:loc0NetMatrixClient.MatrixRoom.RoomId">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:loc0NetMatrixClient.MatrixRoom.RoomAlias">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:loc0NetMatrixClient.MatrixRoom.#ctor(System.String,System.String)">
             <param name="roomId">ID of room you want to call</param>
+            <param name="roomAlias">Alias of room you want to call</param>
         </member>
         <member name="M:loc0NetMatrixClient.MatrixRoom.SendText(loc0NetMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
             <summary>

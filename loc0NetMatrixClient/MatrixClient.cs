@@ -173,6 +173,31 @@ namespace loc0NetMatrixClient
         }
 
         /// <summary>
+        /// Logout of your current account, resets all properties
+        /// </summary>
+        /// <returns>Bool based on success or failure</returns>
+        public async Task<bool> Logout()
+        {
+            var q = await _backendHttpClient.Post($"{HomeServer}/_matrix/client/r0/logout?access_token={AccessToken}");
+
+            try
+            {
+                q.EnsureSuccessStatusCode();
+            }
+            catch (HttpRequestException)
+            {
+                return false;
+            }
+
+            AccessToken = "";
+            DeviceId = "";
+            UserId = "";
+            HomeServer = "";
+
+            return true;
+        }
+
+        /// <summary>
         /// Join multiple rooms via a list
         /// </summary>
         /// <param name="roomsToJoin">List of rooms to join, can be alias or id</param>
@@ -340,7 +365,7 @@ namespace loc0NetMatrixClient
                 foreach (JToken room in roomJToken.Children())
                 {
                     var roomJProperty = (JProperty) room;
-                    var roomId = roomJProperty.Name;
+                    string roomId = roomJProperty.Name;
 
                     if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
 
@@ -362,7 +387,7 @@ namespace loc0NetMatrixClient
                 foreach (JToken room in inviteJToken.Children())
                 {
                     var roomIdJProperty = (JProperty) room;
-                    var roomId = roomIdJProperty.Name;
+                    string roomId = roomIdJProperty.Name;
 
                     var inviteArgs = new InviteReceivedEventArgs(roomId);
                     InviteReceived?.Invoke(inviteArgs);
