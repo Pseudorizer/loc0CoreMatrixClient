@@ -12,8 +12,6 @@ using loc0CoreMatrixClient.Models;
 using MimeTypes;
 using Newtonsoft.Json.Linq;
 
-//credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
-
 namespace loc0CoreMatrixClient
 {
     /// <summary>
@@ -270,7 +268,7 @@ namespace loc0CoreMatrixClient
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("File not found", Path.GetFileName(filePath));
 
-            var contentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath));
+            var contentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath)); //credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
             var filename = Path.GetFileName(filePath);
             var fileBytes = File.ReadAllBytes(filePath);
 
