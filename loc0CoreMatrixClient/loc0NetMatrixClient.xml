@@ -1,92 +1,92 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>loc0NetMatrixClient</name>
+        <name>loc0CoreMatrixClient</name>
     </assembly>
     <members>
-        <member name="T:loc0NetMatrixClient.Events.InviteReceivedEventArgs">
+        <member name="T:loc0CoreMatrixClient.Events.InviteReceivedEventArgs">
             <summary>
             Args for InviteReceivedEvent
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Events.InviteReceivedEventArgs.RoomId">
+        <member name="P:loc0CoreMatrixClient.Events.InviteReceivedEventArgs.RoomId">
             <summary>
             RoomId invite came from
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.Events.InviteReceivedEventArgs.#ctor(System.String)">
+        <member name="M:loc0CoreMatrixClient.Events.InviteReceivedEventArgs.#ctor(System.String)">
             <param name="roomId">RoomId invite came from</param>
         </member>
-        <member name="T:loc0NetMatrixClient.Events.MessageReceivedEventArgs">
+        <member name="T:loc0CoreMatrixClient.Events.MessageReceivedEventArgs">
             <summary>
             Args for MessageReceivedEvent
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Events.MessageReceivedEventArgs.RoomId">
+        <member name="P:loc0CoreMatrixClient.Events.MessageReceivedEventArgs.RoomId">
             <summary>
             Origin RoomID of the message
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Events.MessageReceivedEventArgs.Message">
+        <member name="P:loc0CoreMatrixClient.Events.MessageReceivedEventArgs.Message">
             <summary>
             Plain text message body content
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Events.MessageReceivedEventArgs.SenderId">
+        <member name="P:loc0CoreMatrixClient.Events.MessageReceivedEventArgs.SenderId">
             <summary>
             ID of the user sending the message
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.Events.MessageReceivedEventArgs.#ctor(System.String,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.Events.MessageReceivedEventArgs.#ctor(System.String,System.String,System.String)">
             <param name="roomId">RoomID from message chunk</param>
             <param name="message">Body from message chunk</param>
             <param name="senderId">SenderID from message chunk</param>
         </member>
-        <member name="T:loc0NetMatrixClient.MatrixClient">
+        <member name="T:loc0CoreMatrixClient.MatrixClient">
             <summary>
             Client for interacting with the Matrix API
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.MatrixClient.AccessToken">
+        <member name="P:loc0CoreMatrixClient.MatrixClient.AccessToken">
             <summary>
             AccessToken to be used when interacting with the API
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.MatrixClient.DeviceId">
+        <member name="P:loc0CoreMatrixClient.MatrixClient.DeviceId">
             <summary>
             DeviceId in use
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.MatrixClient.HomeServer">
+        <member name="P:loc0CoreMatrixClient.MatrixClient.HomeServer">
             <summary>
             Homeserver the client is connected to
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.MatrixClient.UserId">
+        <member name="P:loc0CoreMatrixClient.MatrixClient.UserId">
             <summary>
             Full userid of account
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.#ctor(System.Int32)">
-            <param name="messageLimit">Number of messages to take on each sync</param>
-        </member>
-        <member name="T:loc0NetMatrixClient.MatrixClient.MessageReceivedEvent">
+        <member name="T:loc0CoreMatrixClient.MatrixClient.MessageReceivedEvent">
             <inheritdoc />
         </member>
-        <member name="T:loc0NetMatrixClient.MatrixClient.InviteReceivedEvent">
+        <member name="T:loc0CoreMatrixClient.MatrixClient.InviteReceivedEvent">
             <inheritdoc />
         </member>
-        <member name="E:loc0NetMatrixClient.MatrixClient.MessageReceived">
+        <member name="E:loc0CoreMatrixClient.MatrixClient.MessageReceived">
             <summary>
             Event for any incoming messages
             </summary>
         </member>
-        <member name="E:loc0NetMatrixClient.MatrixClient.InviteReceived">
+        <member name="E:loc0CoreMatrixClient.MatrixClient.InviteReceived">
             <summary>
             Event for any incoming invites
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.Login(System.String,loc0NetMatrixClient.Models.MatrixCredentials)">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.#ctor(System.Int32)">
+            <param name="messageLimit">Number of messages to take on each sync</param>
+        </member>
+        <member name="M:loc0CoreMatrixClient.MatrixClient.Login(System.String,loc0CoreMatrixClient.Models.MatrixCredentials)">
             <summary>
             Login to a Matrix account
             </summary>
@@ -94,13 +94,13 @@
             <param name="credentials">MatrixCredentials object that contains login info</param>
             <returns>Bool based on success or failure</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.Logout">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.Logout">
             <summary>
             Logout of your current account, resets all properties
             </summary>
             <returns>Bool based on success or failure</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.JoinRooms(System.Collections.Generic.List{System.String},System.Boolean)">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.JoinRooms(System.Collections.Generic.List{System.String},System.Boolean)">
             <summary>
             Join multiple rooms via a list
             </summary>
@@ -108,7 +108,7 @@
             <param name="retryFailure">If connecting to a room fails, it will retry until success</param>
             <returns>List of strings denoting failure or success</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.JoinRoom(System.String,System.Boolean)">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.JoinRoom(System.String,System.Boolean)">
             <summary>
             Join a single room
             </summary>
@@ -116,7 +116,7 @@
             <param name="retryFailure">If connecting to a room fails, it will retry until success</param>
             <returns>String denoting failure or success</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.Upload(System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.Upload(System.String)">
             <summary>
             Upload a file to Matrix
             </summary>
@@ -124,36 +124,36 @@
             <returns>mxcUri for later use</returns>
             <exception cref="T:System.IO.FileNotFoundException"></exception>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.StartListener">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.StartListener">
             <summary>
             Starts a message listener for any rooms you've joined
             </summary>
             <returns></returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.StopListener">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.StopListener">
             <summary>
             Stop listening for events in the rooms you've joined
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixClient.Sync">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.Sync">
             <summary>
             Contact the sync endpoint
             </summary>
             <returns></returns>
         </member>
-        <member name="T:loc0NetMatrixClient.MatrixHttp">
+        <member name="T:loc0CoreMatrixClient.MatrixHttp">
             <summary>
             Methods for communicating with the Matrix API
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixHttp.Post(System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixHttp.Post(System.String)">
             <summary>
             Wrapper for posting to a Matrix endpoint without content
             </summary>
             <param name="url">Endpoint</param>
             <returns>HttpResponseMessage for consumption</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixHttp.Post(System.String,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixHttp.Post(System.String,System.String,System.String)">
             <summary>
             Wrapper for posting to a Matrix endpoint with content
             </summary>
@@ -162,7 +162,7 @@
             <param name="contentType">Content type, defaults to application/json</param>
             <returns>HttpResponseMessage for consumption</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixHttp.Post(System.String,System.Byte[],System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixHttp.Post(System.String,System.Byte[],System.String)">
             <summary>
             Wrapper for posting to a Matrix endpoint with a byte[]
             </summary>
@@ -171,33 +171,33 @@
             <param name="contentType">Content type</param>
             <returns>HttpResponseMessage for consumption</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixHttp.Get(System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixHttp.Get(System.String)">
             <summary>
             Wrapper for getting from a Matrix endpoint
             </summary>
             <param name="url">Endpoint</param>
             <returns>HttpResponseMessage for consumption</returns>
         </member>
-        <member name="T:loc0NetMatrixClient.MatrixRoom">
+        <member name="T:loc0CoreMatrixClient.MatrixRoom">
             <summary>
             Creates an instance of a matrix room allowing for interaction with said room
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.MatrixRoom.RoomId">
+        <member name="P:loc0CoreMatrixClient.MatrixRoom.RoomId">
             <summary>
             Room id for room
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.MatrixRoom.RoomAlias">
+        <member name="P:loc0CoreMatrixClient.MatrixRoom.RoomAlias">
             <summary>
             Room alias for room
             </summary>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.#ctor(System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.#ctor(System.String,System.String)">
             <param name="roomId">ID of room you want to call</param>
             <param name="roomAlias">Alias of room you want to call</param>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.SendText(loc0NetMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendText(loc0CoreMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
             <summary>
             Send a textMessage to the room
             </summary>
@@ -206,7 +206,7 @@
             <param name="accessToken">Your clients access token</param>
             <returns>Bool based on success or failure</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)">
             <summary>
             Send an image file via a mxcUri
             </summary>
@@ -216,65 +216,60 @@
             <param name="accessToken"></param>
             <returns>Bool based on success or failure</returns>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.SendAudio(System.String,System.String,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendAudio(System.String,System.String,System.String,System.String)">
             <summary>
             Send an audio file via a mxcUri
             </summary>
-            <inheritdoc cref="M:loc0NetMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
+            <inheritdoc cref="M:loc0CoreMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.SendVideo(System.String,System.String,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendVideo(System.String,System.String,System.String,System.String)">
             <summary>
             Send a video file via a mxcUri
             </summary>
-            <inheritdoc cref="M:loc0NetMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
+            <inheritdoc cref="M:loc0CoreMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
         </member>
-        <member name="M:loc0NetMatrixClient.MatrixRoom.SendFile(System.String,System.String,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendFile(System.String,System.String,System.String,System.String)">
             <summary>
             Send a file via a mxcUri
             </summary>
-            <inheritdoc cref="M:loc0NetMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
+            <inheritdoc cref="M:loc0CoreMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
         </member>
-        <member name="T:loc0NetMatrixClient.Models.LoginJson">
-            <summary>
-            JSON structure for login response
-            </summary>
-        </member>
-        <member name="T:loc0NetMatrixClient.Models.MatrixCredentials">
+        <member name="T:loc0CoreMatrixClient.Models.MatrixCredentials">
             <summary>
             Contains properties required for logging in to Matrix
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.UserName">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixCredentials.UserName">
             <summary>
             Username of the account
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.DeviceName">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixCredentials.DeviceName">
             <summary>
             Desired device name, if it's not specified one will be auto-generated on every login
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.Password">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixCredentials.Password">
             <summary>
             Account password
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Models.MatrixCredentials.DeviceId">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixCredentials.DeviceId">
             <summary>
             Desired device id, if it's not specified one will be auto-generated on every login
             </summary>
         </member>
-        <member name="T:loc0NetMatrixClient.Models.MatrixTextMessage">
+        <member name="T:loc0CoreMatrixClient.Models.MatrixTextMessage">
             <summary>
             Defines an object for storing a messages information
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Models.MatrixTextMessage.FormattedBody">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.FormattedBody">
             <summary>
             HTML formatted body
             </summary>
         </member>
-        <member name="P:loc0NetMatrixClient.Models.MatrixTextMessage.Body">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.Body">
             <summary>
             Plain text body
             </summary>

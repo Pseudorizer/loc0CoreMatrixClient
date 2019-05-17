@@ -1,6 +1,6 @@
 using System;
 
-namespace loc0NetMatrixClient.Events
+namespace loc0CoreMatrixClient.Events
 {
     /// <summary>
     /// Args for InviteReceivedEvent

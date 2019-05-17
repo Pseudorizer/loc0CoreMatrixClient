@@ -1,4 +1,4 @@
-﻿namespace loc0NetMatrixClient.Models
+﻿namespace loc0CoreMatrixClient.Models
 {
     internal class MatrixChannel
     {
