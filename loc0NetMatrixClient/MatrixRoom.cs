@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
@@ -13,12 +14,27 @@ namespace loc0NetMatrixClient
     public class MatrixRoom
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
-        private readonly string _roomId;
+
+        /// <summary>
+        /// Room id for room
+        /// </summary>
+        public string RoomId { get; private set; }
+
+        /// <summary>
+        /// Room alias for room
+        /// </summary>
+        public string RoomAlias { get; }
+
 
         /// <param name="roomId">ID of room you want to call</param>
-        public MatrixRoom(string roomId)
+        /// <param name="roomAlias">Alias of room you want to call</param>
+        public MatrixRoom(string roomId = null, string roomAlias = null)
         {
-            _roomId = HttpUtility.UrlEncode(roomId);
+            if (roomId == null && roomAlias == null)
+                throw new ArgumentException("Both roomId and roomAlias cannot be left empty");
+
+            RoomAlias = HttpUtility.UrlEncode(roomAlias) ?? "";
+            RoomId = HttpUtility.UrlEncode(roomId) ?? "";
         }
 
         private async Task<bool> SendMessage(JObject jsonContent, string hostServer, string accessToken)
@@ -28,8 +44,17 @@ namespace loc0NetMatrixClient
                 hostServer = "https://" + hostServer;
             }
 
+            if (string.IsNullOrWhiteSpace(RoomId))
+            {
+                var getRoomIdResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/client/r0/directory/room/{RoomAlias}");
+                string getRoomIdResponseContent = await getRoomIdResponse.Content.ReadAsStringAsync();
+
+                JObject roomIdJObject = JObject.Parse(getRoomIdResponseContent);
+                RoomId = HttpUtility.UrlEncode((string) roomIdJObject["room_id"]);
+            }
+
             HttpResponseMessage sendResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{_roomId}/send/m.room.message?access_token={accessToken}", jsonContent.ToString());
+                $"{hostServer}/_matrix/client/r0/rooms/{RoomId}/send/m.room.message?access_token={accessToken}", jsonContent.ToString());
 
             try
             {
@@ -53,11 +78,11 @@ namespace loc0NetMatrixClient
         {
             var textJObject = new JObject
             {
-                ["msgtype"] = textMessage.Type ?? "",
+                ["msgtype"] = "m.text",
 
                 ["body"] = textMessage.Body ?? "",
 
-                ["format"] = textMessage.Format ?? "",
+                ["format"] = string.IsNullOrWhiteSpace(textMessage.FormattedBody) ? "org.matrix.custom.html" : "",
 
                 ["formatted_body"] = textMessage.FormattedBody ?? ""
             };

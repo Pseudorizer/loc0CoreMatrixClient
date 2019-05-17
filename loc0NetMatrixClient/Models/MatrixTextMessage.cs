@@ -5,17 +5,6 @@
     /// </summary>
     public class MatrixTextMessage
     {
-
-        /// <summary>
-        /// Message type I.E. m.text
-        /// </summary>
-        public string Type { get; set; }
-
-        /// <summary>
-        /// Format of the information I.E. org.matrix.custom.html
-        /// </summary>
-        public string Format { get; set; }
-
         /// <summary>
         /// HTML formatted body
         /// </summary>
