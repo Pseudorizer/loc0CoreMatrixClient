@@ -106,6 +106,8 @@ The key is the room ID which then returns a MatrixRoom object for that room
 
 You should use this instead of creating a new MatrixRoom instance when possible
 
+I.E. `MatrixRoom room = Client.Rooms[ID];`
+
 ---
 #### Events
 `MessageReceived:MessageReceivedEventArgs`
