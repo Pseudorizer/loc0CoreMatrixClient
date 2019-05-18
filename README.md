@@ -67,9 +67,9 @@ Starts a listener task for events in any rooms you've joined
 Cancels the listener task
 
 ---
-`Upload(string:filePath):string`
+`Upload(string:filePath):MatrixFileMessage`
 
-Uploads any file to Matrix and returns the mxc url
+Uploads any file to Matrix and returns a MatrixFileMessage with the MxcUrl, Type and Filename complete
 
 ---
 #### Properties
@@ -133,47 +133,29 @@ Device ID client should use, if one is not supplied it will be auto-generated
 
 ---
 ### MatrixRoom
-#### **Usage:** `MatrixRoom room = new MatrixRoom(string:roomId, string:roomAlias);`
+#### **Usage:** 
+#### `MatrixRoom room = MatrixRoom.CreateByRoomId(string:roomId);`
+#### `MatrixRoom room = MatrixRoom.CreateByRoomAlias(string:roomAlias);`
 
 #### Methods
-`MatrixRoom(string:roomId, string:roomAlias)`
+`CreateByRoomId(string:roomId)`
 
-Can take either a roomId or roomAlias
-
----
-`SendText(MatrixTextMessage:textMessage, string:hostServer, string:accessToken):bool`
-
-Sends a text message via a MatrixTextMessage object to the room, can be formatted or plain
-
-Returns a bool to indicate success
+Creates a room via a roomId
 
 ---
-`SendImage(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
+`CreateByRoomAlias(string:roomAlias)`
 
-Sends an image via a mxc url to the room
-
-Returns a bool to indicate success
+Creates a room via a roomAlias
 
 ---
-`SendAudio(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
+`SendMessage(MatrixTextMessage:textMessage, string:hostServer, string:accessToken):bool`
 
-Sends an audio file via a mxc url to the room
-
-Returns a bool to indicate success
+Sends an m.text message to the room using a MatrixTextMessage object
 
 ---
-`SendVideo(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
+`SendMessage(MatrixFileMessage:textMessage, string:hostServer, string:accessToken):bool`
 
-Sends a video file via a mxc url to the room
-
-Returns a bool to indicate success
-
----
-`SendFile(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
-
-Sends an generic file via a mxc url to the room
-
-Returns a bool to indicate success
+Handles the sending of m.images, m.video, m.file etc. via a MatrixFileMessage object
 
 ---
 #### Properties
@@ -199,3 +181,21 @@ Plain text body of the message
 `string:FormattedBody`
 
 HTML formatted text body of the message, you do not need both, only one or the other
+
+### MatrixFileMessage
+#### **Usage:** `MatrixFileMessage matrixFileMessage = new MatrixFileMessage();`
+
+#### Properties
+`string:Filename`
+
+Filename to be displayed when sending message
+
+---
+`string:Type`
+
+Type of message, I.E. m.image, m.file etc.
+
+---
+`string:MxcUrl`
+
+Mxc url of uploaded file
