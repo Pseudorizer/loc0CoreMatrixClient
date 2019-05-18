@@ -328,7 +328,11 @@ namespace loc0CoreMatrixClient
         /// </summary>
         public async void StartListener()
         {
-            _syncCancellationToken = new CancellationTokenSource();
+            if (_syncCancellationToken.IsCancellationRequested)
+            {
+                _syncCancellationToken = new CancellationTokenSource();
+            }
+
             _matrixListener = new MatrixListener();
 
             await Task.Run(() => _matrixListener.Sync(this, _syncCancellationToken.Token), _syncCancellationToken.Token);
