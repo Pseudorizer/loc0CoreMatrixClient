@@ -328,7 +328,7 @@ namespace loc0CoreMatrixClient
         /// </summary>
         public async void StartListener()
         {
-            if (_syncCancellationToken.IsCancellationRequested)
+            if (_syncCancellationToken == null || _syncCancellationToken.IsCancellationRequested)
             {
                 _syncCancellationToken = new CancellationTokenSource();
             }
