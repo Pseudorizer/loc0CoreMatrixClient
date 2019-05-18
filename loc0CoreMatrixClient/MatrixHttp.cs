@@ -24,7 +24,7 @@ namespace loc0CoreMatrixClient
                 url = "https://" + url;
             }
 
-            using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url)))
+            using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(AddHttps(url))))
             {
                 return await _client.SendAsync(request);
             }
@@ -48,7 +48,7 @@ namespace loc0CoreMatrixClient
 
             using (var request = new StringContent(content, Encoding.UTF8, contentType))
             {
-                response = await _client.PostAsync(new Uri(url), request);
+                response = await _client.PostAsync(new Uri(AddHttps(url)), request);
             }
 
             return response;
@@ -70,7 +70,7 @@ namespace loc0CoreMatrixClient
 
             var byteArrayContent = new ByteArrayContent(content);
             byteArrayContent.Headers.Add("Content-Type", contentType);
-            HttpResponseMessage response = await _client.PostAsync(new Uri(url), byteArrayContent);
+            HttpResponseMessage response = await _client.PostAsync(new Uri(AddHttps(url)), byteArrayContent);
 
             return response;
         }
@@ -80,7 +80,7 @@ namespace loc0CoreMatrixClient
         /// </summary>
         /// <param name="url">Endpoint</param>
         /// <returns>HttpResponseMessage for consumption</returns>
-        public async Task<HttpResponseMessage> Get(string url) => await _client.GetAsync(new Uri(url));
+        public async Task<HttpResponseMessage> Get(string url) => await _client.GetAsync(new Uri(AddHttps(url)));
 
         /// <summary>
         /// Wrapper for putting from a Matrix endpoint
@@ -93,17 +93,14 @@ namespace loc0CoreMatrixClient
         {
             HttpResponseMessage response;
 
-            if (!url.StartsWith("https://"))
-            {
-                url = "https://" + url;
-            }
-
             using (var messageContent = new StringContent(content, Encoding.UTF8, contentType))
             {
-                response = await _client.PutAsync(new Uri(url), messageContent);
+                response = await _client.PutAsync(new Uri(AddHttps(url)), messageContent);
             }
 
             return response;
         }
+
+        private static string AddHttps(string url) => url.StartsWith("https://") ? url : "https://" + url;
     }
 }
