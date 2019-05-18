@@ -283,7 +283,7 @@ namespace loc0CoreMatrixClient
         /// </summary>
         /// <param name="roomId">Room ID which acts as the key</param>
         /// <returns>MatrixRoom object for that room</returns>
-        /// /// <exception cref="KeyNotFoundException"></exception>
+        /// <exception cref="KeyNotFoundException"></exception>
         public MatrixRoom GetMatrixRoomObject(string roomId)
         {
             if (Rooms.TryGetValue(roomId, out MatrixRoom room))

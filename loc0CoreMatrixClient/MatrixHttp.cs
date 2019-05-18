@@ -19,10 +19,6 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url)
         {
-            if (!url.StartsWith("https://"))
-            {
-                url = "https://" + url;
-            }
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(AddHttps(url))))
             {
@@ -41,11 +37,6 @@ namespace loc0CoreMatrixClient
         {
             HttpResponseMessage response;
 
-            if (!url.StartsWith("https://"))
-            {
-                url = "https://" + url;
-            }
-
             using (var request = new StringContent(content, Encoding.UTF8, contentType))
             {
                 response = await _client.PostAsync(new Uri(AddHttps(url)), request);
@@ -63,11 +54,6 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url, byte[] content, string contentType)
         {
-            if (!url.StartsWith("https://"))
-            {
-                url = "https://" + url;
-            }
-
             var byteArrayContent = new ByteArrayContent(content);
             byteArrayContent.Headers.Add("Content-Type", contentType);
             HttpResponseMessage response = await _client.PostAsync(new Uri(AddHttps(url)), byteArrayContent);
