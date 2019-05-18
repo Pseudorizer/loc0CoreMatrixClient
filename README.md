@@ -269,6 +269,11 @@ HTML formatted text body of the message, you do not need both, only one or the o
 Filename to be used when sending the file, this does not change the filename if someone downloads the file
 
 ---
+`string:Description`
+
+Description to be used for the file, defaults to the filename
+
+---
 `string:Type`
 
 Type of the message being sent I.E. m.image, m.file etc.
