@@ -124,6 +124,18 @@
             <returns>mxcUri for later use</returns>
             <exception cref="T:System.IO.FileNotFoundException"></exception>
         </member>
+        <member name="T:loc0CoreMatrixClient.MatrixClient.SyncAlreadyActiveException">
+            <summary>
+            Exception for a user attempting to start a second listener thread
+            </summary>
+        </member>
+        <member name="M:loc0CoreMatrixClient.MatrixClient.SyncAlreadyActiveException.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="M:loc0CoreMatrixClient.MatrixClient.SyncAlreadyActiveException.#ctor(System.String)">
+            <inheritdoc />
+            <param name="message">Message to display</param>
+        </member>
         <member name="M:loc0CoreMatrixClient.MatrixClient.StartListener">
             <summary>
             Starts a message listener for any rooms you've joined

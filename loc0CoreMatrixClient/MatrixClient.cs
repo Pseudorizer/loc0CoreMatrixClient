@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,8 +22,9 @@ namespace loc0CoreMatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
         private readonly List<MatrixChannel> _activeRoomsList = new List<MatrixChannel>();
-        private readonly CancellationTokenSource _syncCancellationToken = new CancellationTokenSource();
         private readonly int _messageLimit;
+        private CancellationTokenSource _syncCancellationToken;
+        private bool _syncActive;
         private string _filterId;
 
         /// <summary>
@@ -107,17 +109,29 @@ namespace loc0CoreMatrixClient
 
             var loginResponseJObject = JObject.Parse(loginResponseContent);
 
-            AccessToken = (string) loginResponseJObject["access_token"];
-            DeviceId = (string) loginResponseJObject["device_id"];
-            HomeServer = (string) loginResponseJObject["home_server"];
-            UserId = (string) loginResponseJObject["user_id"];
+            AccessToken = (string)loginResponseJObject["access_token"];
+            DeviceId = (string)loginResponseJObject["device_id"];
+            HomeServer = (string)loginResponseJObject["home_server"];
+            UserId = (string)loginResponseJObject["user_id"];
 
             if (!Regex.IsMatch(HomeServer, @"^https:\/\/"))
             {
                 HomeServer = "https://" + HomeServer;
             }
 
-            JObject filterJObject = new JObject
+            var filtersResult = await UploadFilters();
+
+            if (!filtersResult)
+            {
+                Console.WriteLine("Failed to upload filters");
+            }
+
+            return true;
+        }
+
+        private async Task<bool> UploadFilters()
+        {
+            var filterJObject = new JObject
             {
                 ["room"] = new JObject
                 {
@@ -163,9 +177,7 @@ namespace loc0CoreMatrixClient
             }
 
             var filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
-
             JObject filterJObjectParsed = JObject.Parse(filterResponseContent);
-
             _filterId = (string)filterJObjectParsed["filter_id"];
 
             return true;
@@ -288,27 +300,59 @@ namespace loc0CoreMatrixClient
             var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
 
             JObject uploadResponseJObject = JObject.Parse(uploadResponseContent);
-            var mxcUrl = (string) uploadResponseJObject["content_uri"];
+            var mxcUrl = (string)uploadResponseJObject["content_uri"];
 
             return mxcUrl;
+        }
+
+        /// <summary>
+        /// Exception for a user attempting to start a second listener thread
+        /// </summary>
+        public class SyncAlreadyActiveException : Exception
+        {
+            /// <inheritdoc />
+            public SyncAlreadyActiveException()
+            {
+            }
+
+            /// <inheritdoc />
+            /// <param name="message">Message to display</param>
+            public SyncAlreadyActiveException(string message)
+            : base(message)
+            {
+            }
         }
 
         /// <summary>
         /// Starts a message listener for any rooms you've joined
         /// </summary>
         /// <returns></returns>
-        public void StartListener() => Sync().ConfigureAwait(false);
+        public void StartListener()
+        {
+            if (_syncActive)
+                throw new SyncAlreadyActiveException("You can't start another listener");
+
+            _syncActive = true;
+            _syncCancellationToken = new CancellationTokenSource();
+            Sync().ConfigureAwait(false);
+        }
 
         /// <summary>
         /// Stop listening for events in the rooms you've joined
         /// </summary>
-        public void StopListener() => _syncCancellationToken.Cancel();
+        public void StopListener()
+        {
+            if (_syncCancellationToken != null)
+            {
+                _syncCancellationToken.Cancel();
+                _syncActive = false;
+            }
+        }
 
         /// <summary>
-        /// Contact the sync endpoint
+        /// Contact the sync endpoint in a fire and forget background task
         /// </summary>
-        /// <returns></returns>
-        private async Task Sync() //break this up in the future, for now it's fine
+        private async Task Sync()
         {
             var nextBatch = string.Empty;
 
@@ -320,6 +364,7 @@ namespace loc0CoreMatrixClient
 
             while (!_syncCancellationToken.IsCancellationRequested)
             {
+                Console.WriteLine("syncing");
                 HttpResponseMessage syncResponseMessage = await _backendHttpClient.Get(
                     $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&since={nextBatch}&access_token={AccessToken}");
                 try
@@ -363,7 +408,7 @@ namespace loc0CoreMatrixClient
             var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
 
             JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
-            return (string) firstSyncJObject["next_batch"];
+            return (string)firstSyncJObject["next_batch"];
         }
 
         private void SyncChecks(JObject syncJObject)
@@ -374,7 +419,7 @@ namespace loc0CoreMatrixClient
             {
                 foreach (JToken room in roomJToken.Children())
                 {
-                    var roomJProperty = (JProperty) room;
+                    var roomJProperty = (JProperty)room;
                     string roomId = roomJProperty.Name;
 
                     if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
@@ -396,7 +441,7 @@ namespace loc0CoreMatrixClient
             {
                 foreach (JToken room in inviteJToken.Children())
                 {
-                    var roomIdJProperty = (JProperty) room;
+                    var roomIdJProperty = (JProperty)room;
                     string roomId = roomIdJProperty.Name;
 
                     var inviteArgs = new InviteReceivedEventArgs(roomId);
