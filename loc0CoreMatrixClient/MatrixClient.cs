@@ -344,6 +344,7 @@ namespace loc0CoreMatrixClient
         public void StopListener() => _syncCancellationToken?.Cancel();
 
         internal void OnMessageReceived(MessageReceivedEventArgs args) => MessageReceived?.Invoke(args);
+
         internal void OnInviteReceived(InviteReceivedEventArgs args) => InviteReceived?.Invoke(args);
     }
 }

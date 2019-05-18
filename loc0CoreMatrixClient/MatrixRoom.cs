@@ -45,9 +45,6 @@ namespace loc0CoreMatrixClient
 
         private async Task<bool> SendMessageRequest(JObject jsonContent, string hostServer, string accessToken)
         {
-            if (RoomId == null && RoomAlias == null)
-                throw new NullReferenceException("Both roomId and roomAlias cannot be left empty");
-
             if (!Regex.IsMatch(hostServer, @"^https:\/\/"))
             {
                 hostServer = "https://" + hostServer;
@@ -56,6 +53,17 @@ namespace loc0CoreMatrixClient
             if (string.IsNullOrWhiteSpace(RoomId))
             {
                 HttpResponseMessage getRoomIdResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/client/r0/directory/room/{RoomAlias}");
+
+                try
+                {
+                    getRoomIdResponse.EnsureSuccessStatusCode();
+                }
+                catch (HttpRequestException)
+                {
+                    Console.WriteLine("Failed to get room ID from room alias");
+                    return false;
+                }
+
                 var getRoomIdResponseContent = await getRoomIdResponse.Content.ReadAsStringAsync();
 
                 JObject roomIdJObject = JObject.Parse(getRoomIdResponseContent);
@@ -103,7 +111,9 @@ namespace loc0CoreMatrixClient
         /// Sends a file to the room
         /// </summary>
         /// <param name="fileMessage">MatrixFileMessage object that contains information for sending</param>
-        /// <inheritdoc cref="SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage,string,string)"/>
+        /// <param name="hostServer">Host server or home server the room resides on</param>
+        /// <param name="accessToken">Your clients access token</param>
+        /// <returns>Bool based on success or failure</returns>
         public async Task<bool> SendMessage(MatrixFileMessage fileMessage, string hostServer, string accessToken)
         {
             JObject jsonContent;
