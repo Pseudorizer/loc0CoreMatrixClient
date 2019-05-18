@@ -21,16 +21,12 @@ namespace loc0CoreMatrixClient
         private readonly int _messageLimit;
         private MatrixListener _matrixListener;
         private CancellationTokenSource _syncCancellationToken;
+        internal Dictionary<string, MatrixRoom> Rooms = new Dictionary<string, MatrixRoom>();
 
         /// <summary>
         /// Id of filter used for API sync calls
         /// </summary>
         public string FilterId { get; private set; }
-
-        /// <summary>
-        /// Dictionary for rooms you've joined, key = room ID and value is a usable MatrixRoom instance
-        /// </summary>
-        public Dictionary<string, MatrixRoom> Rooms { get; } = new Dictionary<string, MatrixRoom>();
 
         /// <summary>
         /// AccessToken to be used when interacting with the API
@@ -283,6 +279,22 @@ namespace loc0CoreMatrixClient
         }
 
         /// <summary>
+        /// Used to access a dictionary containing MatrixRoom objects for each room you've joined
+        /// </summary>
+        /// <param name="roomId">Room ID which acts as the key</param>
+        /// <returns>MatrixRoom object for that room</returns>
+        /// /// <exception cref="KeyNotFoundException"></exception>
+        public MatrixRoom GetMatrixRoomObject(string roomId)
+        {
+            if (Rooms.TryGetValue(roomId, out MatrixRoom room))
+            {
+                return room;
+            }
+
+            throw new KeyNotFoundException("roomId not found");
+        }
+
+        /// <summary>
         /// Upload a file to Matrix
         /// </summary>
         /// <param name="filePath">Path to the file you want to upload</param>
@@ -316,7 +328,9 @@ namespace loc0CoreMatrixClient
 
             MatrixFileMessage matrixFileMessage = new MatrixFileMessage
             {
-                MxcUrl = (string)uploadResponseJObject["content_uri"]
+                MxcUrl = (string)uploadResponseJObject["content_uri"],
+                Filename = filename,
+                Description = filename
             };
 
             var contentTypeSplit = contentType.Split("/")[0];
@@ -332,8 +346,6 @@ namespace loc0CoreMatrixClient
                     matrixFileMessage.Type = "m.file";
                     break;
             }
-
-            matrixFileMessage.Filename = filename;
 
             return matrixFileMessage;
         }

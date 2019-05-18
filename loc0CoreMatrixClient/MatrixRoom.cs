@@ -109,7 +109,7 @@ namespace loc0CoreMatrixClient
             {
                 jsonContent = new JObject
                 {
-                    ["body"] = fileMessage.Filename ?? "",
+                    ["body"] = fileMessage.Description ?? "",
 
                     ["filename"] = fileMessage.Filename ?? "",
 

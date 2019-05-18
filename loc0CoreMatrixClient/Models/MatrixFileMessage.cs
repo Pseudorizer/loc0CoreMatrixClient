@@ -11,6 +11,11 @@
         public string Filename { get; set; }
 
         /// <summary>
+        /// A description for the file, defaults to the filename
+        /// </summary>
+        public string Description { get; set; }
+
+        /// <summary>
         /// Message type I.E. m.image
         /// </summary>
         public string Type { get; set; }
