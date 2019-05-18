@@ -1,7 +1,7 @@
-# loc0NetMatrixClient
+# loc0CoreMatrixClient
 A Lightweight Matrix Client Built With .Net Core
 
-This is a lightweight client for interacting with the Matrix API. It can be used to create simple bots that recieved and send text/formatted messages, images, accept invites etc. I made this for personal use after I had to port a Discord bot of mine over to Riot. Also still a pretty newb programmer so if you want to improve this anyway feel free.
+This is a lightweight client for interacting with the Matrix API. It can be used to create simple bots that recieved and send text/formatted messages, images, accept invites etc. I made this for personal use after I had to port a Discord bot of mine over to Riot. Also, still a pretty newb programmer so if you want to improve this in anyway feel free.
 
 # Current Progress
 * Login with username/password
@@ -67,9 +67,9 @@ Starts a listener task for events in any rooms you've joined
 Cancels the listener task
 
 ---
-`Upload(string:filePath):MatrixFileMessage`
+`Upload(string:filePath):string`
 
-Uploads any file to Matrix and returns a MatrixFileMessage with the MxcUrl, Type and Filename complete
+Uploads any file to Matrix and returns the mxc url
 
 ---
 #### Properties
@@ -92,6 +92,21 @@ The homeserver being used by the account
 
 The user ID in use
 
+---
+`string:FilterId`
+
+Id for filter being used in syncing
+
+---
+`dictionary<string, MatrixRoom>:Rooms`
+
+Dictionary containg MatrixRoom objects for each room joined
+
+The key is the room ID which then returns a MatrixRoom object for that room
+
+You should use this instead of creating a new MatrixRoom instance when possible
+
+---
 #### Events
 `MessageReceived:MessageReceivedEventArgs`
 
@@ -133,29 +148,47 @@ Device ID client should use, if one is not supplied it will be auto-generated
 
 ---
 ### MatrixRoom
-#### **Usage:** 
-#### `MatrixRoom room = MatrixRoom.CreateByRoomId(string:roomId);`
-#### `MatrixRoom room = MatrixRoom.CreateByRoomAlias(string:roomAlias);`
+#### **Usage:** `MatrixRoom room = new MatrixRoom(string:roomId, string:roomAlias);`
 
 #### Methods
-`CreateByRoomId(string:roomId)`
+`MatrixRoom(string:roomId, string:roomAlias)`
 
-Creates a room via a roomId
-
----
-`CreateByRoomAlias(string:roomAlias)`
-
-Creates a room via a roomAlias
+Can take either a roomId or roomAlias
 
 ---
-`SendMessage(MatrixTextMessage:textMessage, string:hostServer, string:accessToken):bool`
+`SendText(MatrixTextMessage:textMessage, string:hostServer, string:accessToken):bool`
 
-Sends an m.text message to the room using a MatrixTextMessage object
+Sends a text message via a MatrixTextMessage object to the room, can be formatted or plain
+
+Returns a bool to indicate success
 
 ---
-`SendMessage(MatrixFileMessage:textMessage, string:hostServer, string:accessToken):bool`
+`SendImage(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
 
-Handles the sending of m.images, m.video, m.file etc. via a MatrixFileMessage object
+Sends an image via a mxc url to the room
+
+Returns a bool to indicate success
+
+---
+`SendAudio(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
+
+Sends an audio file via a mxc url to the room
+
+Returns a bool to indicate success
+
+---
+`SendVideo(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
+
+Sends a video file via a mxc url to the room
+
+Returns a bool to indicate success
+
+---
+`SendFile(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
+
+Sends an generic file via a mxc url to the room
+
+Returns a bool to indicate success
 
 ---
 #### Properties
@@ -181,21 +214,3 @@ Plain text body of the message
 `string:FormattedBody`
 
 HTML formatted text body of the message, you do not need both, only one or the other
-
-### MatrixFileMessage
-#### **Usage:** `MatrixFileMessage matrixFileMessage = new MatrixFileMessage();`
-
-#### Properties
-`string:Filename`
-
-Filename to be displayed when sending message
-
----
-`string:Type`
-
-Type of message, I.E. m.image, m.file etc.
-
----
-`string:MxcUrl`
-
-Mxc url of uploaded file
