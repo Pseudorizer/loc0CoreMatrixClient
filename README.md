@@ -121,6 +121,7 @@ Returns a list of strings containing success/failure messages
 Takes a single room to join
 
 Returns a single string containing a success/failure message
+
 ---
 `GetMatrixRoomObject(string:roomId):MatrixRoom`
 
@@ -180,7 +181,6 @@ An event for recieved messages
 Passes a MessageReceivedEventArgs to your handler
 
 ---
-
 `InviteReceived:InviteReceivedEventArgs`
 
 An event for recieved invites
@@ -221,39 +221,18 @@ Device ID client should use, if one is not supplied it will be auto-generated
 Can take either a roomId or roomAlias
 
 ---
-`SendText(MatrixTextMessage:textMessage, string:hostServer, string:accessToken):bool`
+`SendMessage(MatrixTextMessage:textMessage, string:hostServer, string:accessToken):bool`
 
-Sends a text message via a MatrixTextMessage object to the room, can be formatted or plain
+Sends a text message to the room, can be either a simple plain text message or HTML formatted
 
-Returns a bool to indicate success
-
----
-`SendImage(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
-
-Sends an image via a mxc url to the room
-
-Returns a bool to indicate success
+Returns a bool to indiciate success
 
 ---
-`SendAudio(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
+`SendMessage(MatrixFileMessage:textMessage, string:hostServer, string:accessToken):bool`
 
-Sends an audio file via a mxc url to the room
+Sends an uploaded file to the room via a MxcUrl
 
-Returns a bool to indicate success
-
----
-`SendVideo(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
-
-Sends a video file via a mxc url to the room
-
-Returns a bool to indicate success
-
----
-`SendFile(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
-
-Sends an generic file via a mxc url to the room
-
-Returns a bool to indicate success
+Returns a bool to indiciate success
 
 ---
 #### Properties
@@ -279,3 +258,22 @@ Plain text body of the message
 `string:FormattedBody`
 
 HTML formatted text body of the message, you do not need both, only one or the other
+
+---
+### MatrixFileMessage
+#### **Usage:** `MatrixFileMessage matrixFileMessage = new MatrixFileMessage();`
+
+#### Properties
+`string:Filename`
+
+Filename to be used when sending the file, this does not change the filename if someone downloads the file
+
+---
+`string:Type`
+
+Type of the message being sent I.E. m.image, m.file etc.
+
+---
+`string:MxcUrl`
+
+Mxc url of the uploaded file
