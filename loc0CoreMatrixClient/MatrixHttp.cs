@@ -1,7 +1,6 @@
 using System;
 using System.Net.Http;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -21,7 +20,7 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url)
         {
-            if (!Regex.IsMatch(url, @"^https:\/\/"))
+            if (!url.StartsWith("https://"))
             {
                 url = "https://" + url;
             }
@@ -43,7 +42,7 @@ namespace loc0CoreMatrixClient
         {
             HttpResponseMessage response;
 
-            if (!Regex.IsMatch(url, @"^https:\/\/"))
+            if (!url.StartsWith("https://"))
             {
                 url = "https://" + url;
             }
@@ -65,7 +64,7 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url, byte[] content, string contentType)
         {
-            if (!Regex.IsMatch(url, @"^https:\/\/"))
+            if (!url.StartsWith("https://"))
             {
                 url = "https://" + url;
             }
@@ -88,7 +87,7 @@ namespace loc0CoreMatrixClient
         {
             HttpResponseMessage response;
 
-            if (!Regex.IsMatch(url, @"^https:\/\/"))
+            if (!url.StartsWith("https://"))
             {
                 url = "https://" + url;
             }
