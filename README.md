@@ -92,6 +92,21 @@ The homeserver being used by the account
 
 The user ID in use
 
+---
+`string:FilterId`
+
+Id for filter being used in syncing
+
+---
+`dictionary<string, MatrixRoom>:Rooms`
+
+Dictionary containg MatrixRoom objects for each room joined
+
+The key is the room ID which then returns a MatrixRoom object for that room
+
+You should use this instead of creating a new MatrixRoom instance when possible
+
+---
 #### Events
 `MessageReceived:MessageReceivedEventArgs`
 
