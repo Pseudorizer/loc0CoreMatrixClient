@@ -86,7 +86,7 @@ namespace loc0CoreMatrixClient
                     var roomJProperty = (JProperty)room;
                     var roomId = roomJProperty.Name;
 
-                    if (_client.ActiveRoomsList.All(x => x.ChannelId != roomId)) continue;
+                    if (!_client.Rooms.ContainsKey(roomId)) continue;
 
                     foreach (JToken message in room.First["timeline"]["events"].Children())
                     {

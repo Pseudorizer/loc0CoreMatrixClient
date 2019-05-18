@@ -23,28 +23,24 @@ namespace loc0CoreMatrixClient
         /// <summary>
         /// Room alias for room
         /// </summary>
-        public string RoomAlias { get; private set; }
+        public string RoomAlias { get; }
 
-        /// <param name="roomId">ID of room you want to call</param>
-        public static MatrixRoom CreateByRoomId(string roomId)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="roomId"></param>
+        /// <param name="roomAlias"></param>
+        public MatrixRoom(string roomId = null, string roomAlias = null)
         {
-            return new MatrixRoom
-            {
-                RoomId = roomId
-            };
-        }
-
-        /// <param name="roomAlias">Alias of room you want to call</param>
-        public static MatrixRoom CreateByRoomAlias(string roomAlias)
-        {
-            return new MatrixRoom
-            {
-                RoomAlias = roomAlias
-            };
+            RoomId = roomId;
+            RoomAlias = roomAlias;
         }
 
         private async Task<bool> SendMessageRequest(JObject jsonContent, string hostServer, string accessToken)
         {
+            if (RoomId == null && RoomAlias == null)
+                throw new NullReferenceException("Both RoomId and RoomAlias are null");
+
             if (!Regex.IsMatch(hostServer, @"^https:\/\/"))
             {
                 hostServer = "https://" + hostServer;
@@ -99,7 +95,7 @@ namespace loc0CoreMatrixClient
 
                 ["body"] = textMessage.Body ?? "",
 
-                ["format"] = string.IsNullOrWhiteSpace(textMessage.FormattedBody) ? "org.matrix.custom.html" : "",
+                ["format"] = string.IsNullOrWhiteSpace(textMessage.FormattedBody) ? "" : "org.matrix.custom.html",
 
                 ["formatted_body"] = textMessage.FormattedBody ?? ""
             };
@@ -130,7 +126,7 @@ namespace loc0CoreMatrixClient
 
                     ["msgtype"] = "m.file",
 
-                    ["url"] = fileMessage.Filename
+                    ["url"] = fileMessage.MxcUrl ?? ""
                 };
             }
             else
@@ -143,7 +139,7 @@ namespace loc0CoreMatrixClient
 
                     ["msgtype"] = fileMessage.Type ?? "",
 
-                    ["url"] = fileMessage.MxcUrl
+                    ["url"] = fileMessage.MxcUrl ?? ""
                 };
             }
 

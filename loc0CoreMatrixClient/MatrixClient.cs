@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -22,8 +23,16 @@ namespace loc0CoreMatrixClient
         private readonly int _messageLimit;
         private MatrixListener _matrixListener;
         private CancellationTokenSource _syncCancellationToken;
-        internal readonly List<MatrixChannel> ActiveRoomsList = new List<MatrixChannel>();
-        internal string FilterId;
+
+        /// <summary>
+        /// Id of filter used for API sync calls
+        /// </summary>
+        public string FilterId { get; private set; }
+
+        /// <summary>
+        /// Dictionary for rooms you've joined, key = room ID and value is a usable MatrixRoom instance
+        /// </summary>
+        public Dictionary<string, MatrixRoom> Rooms { get; } = new Dictionary<string, MatrixRoom>();
 
         /// <summary>
         /// AccessToken to be used when interacting with the API
@@ -221,6 +230,12 @@ namespace loc0CoreMatrixClient
                 var room = roomsToJoin[i];
                 Console.WriteLine($"Joining {room}");
 
+                if (Rooms.ContainsKey(room))
+                {
+                    Console.WriteLine($"Already joined {room}");
+                    continue;
+                }
+
                 var requestUrl =
                     $"{HomeServer}/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}?access_token={AccessToken}";
 
@@ -229,9 +244,6 @@ namespace loc0CoreMatrixClient
                 try
                 {
                     roomResponse.EnsureSuccessStatusCode();
-                    responseList.Add($"Successfully Joined {room}");
-                    JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
-                    ActiveRoomsList.Add(new MatrixChannel((string)roomResponseJObject["room_id"]));
                 }
                 catch (HttpRequestException)
                 {
@@ -245,7 +257,13 @@ namespace loc0CoreMatrixClient
                     }
                 }
 
-                await Task.Delay(2000);
+                responseList.Add($"Successfully Joined {room}");
+                JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
+
+                MatrixRoom newRoom = new MatrixRoom((string)roomResponseJObject["room_id"], room);
+                Rooms.Add(newRoom.RoomId, newRoom);
+
+            await Task.Delay(2000);
             }
 
             return responseList;

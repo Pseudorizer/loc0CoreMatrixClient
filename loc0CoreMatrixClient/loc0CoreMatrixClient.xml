@@ -47,6 +47,16 @@
             Client for interacting with the Matrix API
             </summary>
         </member>
+        <member name="P:loc0CoreMatrixClient.MatrixClient.FilterId">
+            <summary>
+            Id of filter used for API sync calls
+            </summary>
+        </member>
+        <member name="P:loc0CoreMatrixClient.MatrixClient.Rooms">
+            <summary>
+            Dictionary for rooms you've joined, key = room ID and value is a usable MatrixRoom instance
+            </summary>
+        </member>
         <member name="P:loc0CoreMatrixClient.MatrixClient.AccessToken">
             <summary>
             AccessToken to be used when interacting with the API
@@ -191,11 +201,12 @@
             Room alias for room
             </summary>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.CreateByRoomId(System.String)">
-            <param name="roomId">ID of room you want to call</param>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.CreateByRoomAlias(System.String)">
-            <param name="roomAlias">Alias of room you want to call</param>
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.#ctor(System.String,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="roomId"></param>
+            <param name="roomAlias"></param>
         </member>
         <member name="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
             <summary>
@@ -211,7 +222,9 @@
             Sends a file to the room
             </summary>
             <param name="fileMessage">MatrixFileMessage object that contains information for sending</param>
-            <inheritdoc cref="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage,System.String,System.String)"/>
+            <param name="hostServer">Host server or home server the room resides on</param>
+            <param name="accessToken">Your clients access token</param>
+            <returns>Bool based on success or failure</returns>
         </member>
         <member name="T:loc0CoreMatrixClient.Models.MatrixCredentials">
             <summary>
