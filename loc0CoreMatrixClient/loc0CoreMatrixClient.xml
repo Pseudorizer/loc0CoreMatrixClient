@@ -138,7 +138,7 @@
         </member>
         <member name="M:loc0CoreMatrixClient.MatrixClient.StartListener">
             <summary>
-            Starts a message listener for any rooms you've joined
+            Starts an event listener for any rooms you've joined
             </summary>
             <returns></returns>
         </member>
@@ -147,11 +147,10 @@
             Stop listening for events in the rooms you've joined
             </summary>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixClient.Sync">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.Sync(System.Threading.CancellationToken)">
             <summary>
-            Contact the sync endpoint
+            Contact the sync endpoint in a fire and forget background task
             </summary>
-            <returns></returns>
         </member>
         <member name="T:loc0CoreMatrixClient.MatrixHttp">
             <summary>

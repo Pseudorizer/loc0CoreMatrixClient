@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -324,7 +323,7 @@ namespace loc0CoreMatrixClient
         }
 
         /// <summary>
-        /// Starts a message listener for any rooms you've joined
+        /// Starts an event listener for any rooms you've joined
         /// </summary>
         /// <returns></returns>
         public void StartListener()
@@ -334,7 +333,7 @@ namespace loc0CoreMatrixClient
 
             _syncActive = true;
             _syncCancellationToken = new CancellationTokenSource();
-            Sync().ConfigureAwait(false);
+            Sync(_syncCancellationToken.Token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -352,19 +351,18 @@ namespace loc0CoreMatrixClient
         /// <summary>
         /// Contact the sync endpoint in a fire and forget background task
         /// </summary>
-        private async Task Sync()
+        private async Task Sync(CancellationToken syncCancellationToken)
         {
             var nextBatch = string.Empty;
 
-            while (string.IsNullOrWhiteSpace(nextBatch))
+            while (string.IsNullOrWhiteSpace(nextBatch) && !syncCancellationToken.IsCancellationRequested)
             {
                 nextBatch = await FirstSync();
-                await Task.Delay(2000);
+                await Task.Delay(2000, syncCancellationToken);
             }
 
-            while (!_syncCancellationToken.IsCancellationRequested)
+            while (!syncCancellationToken.IsCancellationRequested)
             {
-                Console.WriteLine("syncing");
                 HttpResponseMessage syncResponseMessage = await _backendHttpClient.Get(
                     $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&since={nextBatch}&access_token={AccessToken}");
                 try
@@ -374,7 +372,7 @@ namespace loc0CoreMatrixClient
                 catch (HttpRequestException)
                 {
                     Console.WriteLine("Sync failed");
-                    await Task.Delay(2000, _syncCancellationToken.Token);
+                    await Task.Delay(2000, syncCancellationToken);
                     continue;
                 }
 
@@ -386,7 +384,7 @@ namespace loc0CoreMatrixClient
 
                 SyncChecks(syncResponseJObject);
 
-                await Task.Delay(2000, _syncCancellationToken.Token);
+                await Task.Delay(2000, syncCancellationToken);
             }
         }
 
