@@ -204,8 +204,10 @@
             Room alias for room
             </summary>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.#ctor(System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.CreateByRoomId(System.String)">
             <param name="roomId">ID of room you want to call</param>
+        </member>
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.CreateByRoomAlias(System.String)">
             <param name="roomAlias">Alias of room you want to call</param>
         </member>
         <member name="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
@@ -249,24 +251,39 @@
             Desired device id, if it's not specified one will be auto-generated on every login
             </summary>
         </member>
+        <member name="T:loc0CoreMatrixClient.Models.MatrixFileMessage">
+            <summary>
+            Defines an object for storing information about a file for sending
+            </summary>
+        </member>
+        <member name="P:loc0CoreMatrixClient.Models.MatrixFileMessage.Filename">
+            <summary>
+            Filename to be used
+            </summary>
+        </member>
+        <member name="P:loc0CoreMatrixClient.Models.MatrixFileMessage.Type">
+            <summary>
+            Message type I.E. m.image
+            </summary>
+        </member>
+        <member name="P:loc0CoreMatrixClient.Models.MatrixFileMessage.MxcUrl">
+            <summary>
+            MxcUrl to be used when sending message
+            </summary>
+        </member>
         <member name="T:loc0CoreMatrixClient.Models.MatrixTextMessage">
             <summary>
             Defines an object for storing a messages information
             </summary>
         </member>
-        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.FormattedFilename">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.FormattedBody">
             <summary>
             HTML formatted body
             </summary>
         </member>
-        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.Filename">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.Body">
             <summary>
             Plain text body
-            </summary>
-        </member>
-        <member name="T:loc0CoreMatrixClient.Models.MatrixFileMessage">
-            <summary>
-            
             </summary>
         </member>
     </members>

@@ -23,21 +23,30 @@ namespace loc0CoreMatrixClient
         /// <summary>
         /// Room alias for room
         /// </summary>
-        public string RoomAlias { get; }
-
+        public string RoomAlias { get; private set; }
 
         /// <param name="roomId">ID of room you want to call</param>
-        /// <param name="roomAlias">Alias of room you want to call</param>
-        public MatrixRoom(string roomId = null, string roomAlias = null)
+        public static MatrixRoom CreateByRoomId(string roomId)
         {
-            RoomAlias = HttpUtility.UrlEncode(roomAlias) ?? "";
-            RoomId = HttpUtility.UrlEncode(roomId) ?? "";
+            return new MatrixRoom
+            {
+                RoomId = roomId
+            };
+        }
+
+        /// <param name="roomAlias">Alias of room you want to call</param>
+        public static MatrixRoom CreateByRoomAlias(string roomAlias)
+        {
+            return new MatrixRoom
+            {
+                RoomAlias = roomAlias
+            };
         }
 
         private async Task<bool> SendMessageRequest(JObject jsonContent, string hostServer, string accessToken)
         {
             if (RoomId == null && RoomAlias == null)
-                throw new ArgumentException("Both roomId and roomAlias cannot be left empty");
+                throw new NullReferenceException("Both roomId and roomAlias cannot be left empty");
 
             if (!Regex.IsMatch(hostServer, @"^https:\/\/"))
             {
