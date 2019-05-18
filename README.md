@@ -16,6 +16,72 @@ This is a lightweight client for interacting with the Matrix API. It can be used
 * Allow encryption to be used - Biggest task
 * Whatever the future tells me to do!
 
+# Example Code
+```
+private static readonly MatrixClient MatrixClient = new MatrixClient();
+
+public static void Main()
+{
+    Example().GetAwaiter().GetResult();
+}
+
+private static async Task Example()
+{
+    MatrixCredentials matrixCredentials = new MatrixCredentials
+    {
+        UserName = "",
+        Password = "",
+        DeviceName = "",
+        DeviceId = ""
+    };
+
+    Console.WriteLine("Logging in...");
+
+    if (await MatrixClient.Login("hostServer", matrixCredentials))
+    {
+        Console.WriteLine("Success");
+
+        List<string> roomsToJoin = new List<string>
+        {
+            "#room1:host",
+            "!IDOfRoom:host"
+        };
+
+        List<string> joinResults = await MatrixClient.JoinRooms(roomsToJoin, true);
+
+        foreach (var joinResult in joinResults)
+        {
+            Console.WriteLine(joinResult);
+        }
+
+        MatrixClient.MessageReceived += MessageReceivedHandlerExample;
+
+        MatrixClient.StartListener();
+
+        await Task.Delay(-1);
+    }
+    else
+    {
+        Console.WriteLine("Failed");
+    }
+}
+
+private static async void MessageReceivedHandlerExample(MessageReceivedEventArgs args)
+{
+    MatrixRoom messageRoom = MatrixClient.GetMatrixRoomObject(args.RoomId);
+
+    if (args.SenderId == "a" && args.Message.StartsWith("ping"))
+    {
+        MatrixTextMessage message = new MatrixTextMessage
+        {
+            Body = "pong"
+        };
+
+        var sendResult = await messageRoom.SendMessage(message, Client.HomeServer, Client.AccessToken);
+    }
+}
+```
+
 # Documentation
 
 #### Format: method(type:parameterName):returnType
@@ -55,6 +121,14 @@ Returns a list of strings containing success/failure messages
 Takes a single room to join
 
 Returns a single string containing a success/failure message
+---
+`GetMatrixRoomObject(string:roomId):MatrixRoom`
+
+Accesses a dictionary which contains MatrixRoom objects for each room you've joined
+
+Room ID acts as the key
+
+I'd recommend you use this to create a new MatrixRoom instance though it's not required
 
 ---
 `StartListener():void`
@@ -96,17 +170,6 @@ The user ID in use
 `string:FilterId`
 
 Id for filter being used in syncing
-
----
-`dictionary<string, MatrixRoom>:Rooms`
-
-Dictionary containg MatrixRoom objects for each room joined
-
-The key is the room ID which then returns a MatrixRoom object for that room
-
-You should use this instead of creating a new MatrixRoom instance when possible
-
-I.E. `MatrixRoom room = Client.Rooms[ID];`
 
 ---
 #### Events
