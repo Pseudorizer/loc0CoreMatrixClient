@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Net.Http;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web;
 using loc0CoreMatrixClient.Models;
 using Newtonsoft.Json.Linq;
 
@@ -41,11 +39,6 @@ namespace loc0CoreMatrixClient
             if (RoomId == null && RoomAlias == null)
                 throw new NullReferenceException("Both RoomId and RoomAlias are null");
 
-            if (!Regex.IsMatch(hostServer, @"^https:\/\/"))
-            {
-                hostServer = "https://" + hostServer;
-            }
-
             if (string.IsNullOrWhiteSpace(RoomId))
             {
                 HttpResponseMessage getRoomIdResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/client/r0/directory/room/{RoomAlias}");
@@ -63,7 +56,7 @@ namespace loc0CoreMatrixClient
                 var getRoomIdResponseContent = await getRoomIdResponse.Content.ReadAsStringAsync();
 
                 JObject roomIdJObject = JObject.Parse(getRoomIdResponseContent);
-                RoomId = HttpUtility.UrlEncode((string) roomIdJObject["room_id"]);
+                RoomId = (string) roomIdJObject["room_id"];
             }
 
             HttpResponseMessage sendResponse = await _backendHttpClient.Post(

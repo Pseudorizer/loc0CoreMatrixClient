@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using loc0CoreMatrixClient.Events;
 using loc0CoreMatrixClient.Models;
 using MimeTypes;
@@ -100,11 +98,6 @@ namespace loc0CoreMatrixClient
                 ["device_id"] = credentials.DeviceId ?? ""
             };
 
-            if (!Regex.IsMatch(host, @"^https:\/\/"))
-            {
-                host = "https://" + host;
-            }
-
             HttpResponseMessage loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJObject.ToString());
 
             try
@@ -124,11 +117,6 @@ namespace loc0CoreMatrixClient
             DeviceId = (string)loginResponseJObject["device_id"];
             HomeServer = (string)loginResponseJObject["home_server"];
             UserId = (string)loginResponseJObject["user_id"];
-
-            if (!Regex.IsMatch(HomeServer, @"^https:\/\/"))
-            {
-                HomeServer = "https://" + HomeServer;
-            }
 
             var filtersResult = await UploadFilters();
 
@@ -242,7 +230,7 @@ namespace loc0CoreMatrixClient
                 }
 
                 var requestUrl =
-                    $"{HomeServer}/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}?access_token={AccessToken}";
+                    $"{HomeServer}/_matrix/client/r0/join/{room}?access_token={AccessToken}";
 
                 HttpResponseMessage roomResponse = await _backendHttpClient.Post(requestUrl);
 

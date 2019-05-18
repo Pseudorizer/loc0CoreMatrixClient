@@ -1,7 +1,9 @@
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace loc0CoreMatrixClient
 {
@@ -19,7 +21,12 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url)
         {
-            using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(url)))
+            if (!Regex.IsMatch(url, @"^https:\/\/"))
+            {
+                url = "https://" + url;
+            }
+
+            using (var request = new HttpRequestMessage(HttpMethod.Post, new Uri(HttpUtility.UrlEncode(url))))
             {
                 return await _client.SendAsync(request);
             }
@@ -36,9 +43,14 @@ namespace loc0CoreMatrixClient
         {
             HttpResponseMessage response;
 
+            if (!Regex.IsMatch(url, @"^https:\/\/"))
+            {
+                url = "https://" + url;
+            }
+
             using (var request = new StringContent(content, Encoding.UTF8, contentType))
             {
-                response = await _client.PostAsync(new Uri(url), request);
+                response = await _client.PostAsync(new Uri(HttpUtility.UrlEncode(url)), request);
             }
 
             return response;
@@ -53,9 +65,14 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string url, byte[] content, string contentType)
         {
+            if (!Regex.IsMatch(url, @"^https:\/\/"))
+            {
+                url = "https://" + url;
+            }
+
             var byteArrayContent = new ByteArrayContent(content);
             byteArrayContent.Headers.Add("Content-Type", contentType);
-            HttpResponseMessage response = await _client.PostAsync(new Uri(url), byteArrayContent);
+            HttpResponseMessage response = await _client.PostAsync(new Uri(HttpUtility.UrlEncode(url)), byteArrayContent);
 
             return response;
         }
@@ -65,15 +82,20 @@ namespace loc0CoreMatrixClient
         /// </summary>
         /// <param name="url">Endpoint</param>
         /// <returns>HttpResponseMessage for consumption</returns>
-        public async Task<HttpResponseMessage> Get(string url) => await _client.GetAsync(new Uri(url));
+        public async Task<HttpResponseMessage> Get(string url) => await _client.GetAsync(new Uri(HttpUtility.UrlEncode(url)));
 
         public async Task<HttpResponseMessage> Put(string url, string content, string contentType = "application/json")
         {
             HttpResponseMessage response;
 
+            if (!Regex.IsMatch(url, @"^https:\/\/"))
+            {
+                url = "https://" + url;
+            }
+
             using (var messageContent = new StringContent(content, Encoding.UTF8, contentType))
             {
-                response = await _client.PutAsync(new Uri(url), messageContent);
+                response = await _client.PutAsync(new Uri(HttpUtility.UrlEncode(url)), messageContent);
             }
 
             return response;
