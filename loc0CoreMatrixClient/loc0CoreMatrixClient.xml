@@ -39,7 +39,7 @@
         </member>
         <member name="M:loc0CoreMatrixClient.Events.MessageReceivedEventArgs.#ctor(System.String,System.String,System.String)">
             <param name="roomId">RoomID from message chunk</param>
-            <param name="message">Body from message chunk</param>
+            <param name="message">Filename from message chunk</param>
             <param name="senderId">SenderID from message chunk</param>
         </member>
         <member name="T:loc0CoreMatrixClient.MatrixClient">
@@ -121,7 +121,7 @@
             Upload a file to Matrix
             </summary>
             <param name="filePath">Path to the file you want to upload</param>
-            <returns>mxcUri for later use</returns>
+            <returns>MatrixFileMessage with MxcUrl and Type</returns>
             <exception cref="T:System.IO.FileNotFoundException"></exception>
         </member>
         <member name="T:loc0CoreMatrixClient.MatrixClient.SyncAlreadyActiveException">
@@ -208,42 +208,21 @@
             <param name="roomId">ID of room you want to call</param>
             <param name="roomAlias">Alias of room you want to call</param>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendText(loc0CoreMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
             <summary>
-            Send a textMessage to the room
+            Send a text message to the room
             </summary>
             <param name="textMessage">Message as a MatrixTextMessage</param>
             <param name="hostServer">Host server or home server the room resides on</param>
             <param name="accessToken">Your clients access token</param>
             <returns>Bool based on success or failure</returns>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixFileMessage,System.String,System.String)">
             <summary>
-            Send an image file via a mxcUri
+            Sends a file to the room
             </summary>
-            <param name="matrixFileUrl">mxcUri of uploaded content</param>
-            <param name="filename">Filename people will see in chat, doesn't actually change the filename when downloading</param>
-            <param name="hostServer"></param>
-            <param name="accessToken"></param>
-            <returns>Bool based on success or failure</returns>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendAudio(System.String,System.String,System.String,System.String)">
-            <summary>
-            Send an audio file via a mxcUri
-            </summary>
-            <inheritdoc cref="M:loc0CoreMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendVideo(System.String,System.String,System.String,System.String)">
-            <summary>
-            Send a video file via a mxcUri
-            </summary>
-            <inheritdoc cref="M:loc0CoreMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendFile(System.String,System.String,System.String,System.String)">
-            <summary>
-            Send a file via a mxcUri
-            </summary>
-            <inheritdoc cref="M:loc0CoreMatrixClient.MatrixRoom.SendImage(System.String,System.String,System.String,System.String)"/>
+            <param name="fileMessage">MatrixFileMessage object that contains information for sending</param>
+            <inheritdoc cref="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage,System.String,System.String)"/>
         </member>
         <member name="T:loc0CoreMatrixClient.Models.MatrixCredentials">
             <summary>
@@ -275,14 +254,19 @@
             Defines an object for storing a messages information
             </summary>
         </member>
-        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.FormattedBody">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.FormattedFilename">
             <summary>
             HTML formatted body
             </summary>
         </member>
-        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.Body">
+        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.Filename">
             <summary>
             Plain text body
+            </summary>
+        </member>
+        <member name="T:loc0CoreMatrixClient.Models.MatrixFileMessage">
+            <summary>
+            
             </summary>
         </member>
     </members>

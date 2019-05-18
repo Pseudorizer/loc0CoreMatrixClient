@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -272,9 +273,9 @@ namespace loc0CoreMatrixClient
         /// Upload a file to Matrix
         /// </summary>
         /// <param name="filePath">Path to the file you want to upload</param>
-        /// <returns>mxcUri for later use</returns>
+        /// <returns>MatrixFileMessage with MxcUrl and Type</returns>
         /// <exception cref="FileNotFoundException"></exception>
-        public async Task<string> Upload(string filePath)
+        public async Task<MatrixFileMessage> Upload(string filePath)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("File not found", Path.GetFileName(filePath));
@@ -293,15 +294,35 @@ namespace loc0CoreMatrixClient
             }
             catch (HttpRequestException)
             {
-                return "Failed to upload";
+                return null;
             }
 
             var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
 
             JObject uploadResponseJObject = JObject.Parse(uploadResponseContent);
-            var mxcUrl = (string)uploadResponseJObject["content_uri"];
 
-            return mxcUrl;
+            MatrixFileMessage matrixFileMessage = new MatrixFileMessage
+            {
+                MxcUrl = (string)uploadResponseJObject["content_uri"]
+            };
+
+            var contentTypeSplit = contentType.Split("/")[0];
+
+            switch (contentTypeSplit)
+            {
+                case "image":
+                case "video":
+                case "audio":
+                    matrixFileMessage.Type = $"m.{contentTypeSplit}";
+                    break;
+                default:
+                    matrixFileMessage.Type = "m.file";
+                    break;
+            }
+
+            matrixFileMessage.Filename = filename;
+
+            return matrixFileMessage;
         }
 
         /// <summary>
@@ -400,7 +421,7 @@ namespace loc0CoreMatrixClient
             catch (HttpRequestException)
             {
                 Console.WriteLine("Initial Sync failed");
-                return "";
+                return null;
             }
 
             var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
@@ -418,7 +439,7 @@ namespace loc0CoreMatrixClient
                 foreach (JToken room in roomJToken.Children())
                 {
                     var roomJProperty = (JProperty)room;
-                    string roomId = roomJProperty.Name;
+                    var roomId = roomJProperty.Name;
 
                     if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
 

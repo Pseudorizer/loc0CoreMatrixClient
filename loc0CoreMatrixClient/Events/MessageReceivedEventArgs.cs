@@ -24,7 +24,7 @@ namespace loc0CoreMatrixClient.Events
         public string SenderId { get; }
 
         /// <param name="roomId">RoomID from message chunk</param>
-        /// <param name="message">Body from message chunk</param>
+        /// <param name="message">Filename from message chunk</param>
         /// <param name="senderId">SenderID from message chunk</param>
         public MessageReceivedEventArgs(string roomId, string message, string senderId)
         {

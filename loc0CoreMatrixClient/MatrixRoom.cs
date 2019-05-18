@@ -30,15 +30,15 @@ namespace loc0CoreMatrixClient
         /// <param name="roomAlias">Alias of room you want to call</param>
         public MatrixRoom(string roomId = null, string roomAlias = null)
         {
-            if (roomId == null && roomAlias == null)
-                throw new ArgumentException("Both roomId and roomAlias cannot be left empty");
-
             RoomAlias = HttpUtility.UrlEncode(roomAlias) ?? "";
             RoomId = HttpUtility.UrlEncode(roomId) ?? "";
         }
 
-        private async Task<bool> SendMessage(JObject jsonContent, string hostServer, string accessToken)
+        private async Task<bool> SendMessageRequest(JObject jsonContent, string hostServer, string accessToken)
         {
+            if (RoomId == null && RoomAlias == null)
+                throw new ArgumentException("Both roomId and roomAlias cannot be left empty");
+
             if (!Regex.IsMatch(hostServer, @"^https:\/\/"))
             {
                 hostServer = "https://" + hostServer;
@@ -46,8 +46,8 @@ namespace loc0CoreMatrixClient
 
             if (string.IsNullOrWhiteSpace(RoomId))
             {
-                var getRoomIdResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/client/r0/directory/room/{RoomAlias}");
-                string getRoomIdResponseContent = await getRoomIdResponse.Content.ReadAsStringAsync();
+                HttpResponseMessage getRoomIdResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/client/r0/directory/room/{RoomAlias}");
+                var getRoomIdResponseContent = await getRoomIdResponse.Content.ReadAsStringAsync();
 
                 JObject roomIdJObject = JObject.Parse(getRoomIdResponseContent);
                 RoomId = HttpUtility.UrlEncode((string) roomIdJObject["room_id"]);
@@ -68,13 +68,13 @@ namespace loc0CoreMatrixClient
         }
 
         /// <summary>
-        /// Send a textMessage to the room
+        /// Send a text message to the room
         /// </summary>
         /// <param name="textMessage">Message as a MatrixTextMessage</param>
         /// <param name="hostServer">Host server or home server the room resides on</param>
         /// <param name="accessToken">Your clients access token</param>
         /// <returns>Bool based on success or failure</returns>
-        public async Task<bool> SendText(MatrixTextMessage textMessage, string hostServer, string accessToken)
+        public async Task<bool> SendMessage(MatrixTextMessage textMessage, string hostServer, string accessToken)
         {
             var textJObject = new JObject
             {
@@ -87,93 +87,48 @@ namespace loc0CoreMatrixClient
                 ["formatted_body"] = textMessage.FormattedBody ?? ""
             };
 
-            return await SendMessage(textJObject, hostServer, accessToken);
+            return await SendMessageRequest(textJObject, hostServer, accessToken);
         }
 
         /// <summary>
-        /// Send an image file via a mxcUri
+        /// Sends a file to the room
         /// </summary>
-        /// <param name="matrixFileUrl">mxcUri of uploaded content</param>
-        /// <param name="filename">Filename people will see in chat, doesn't actually change the filename when downloading</param>
-        /// <param name="hostServer"></param>
-        /// <param name="accessToken"></param>
-        /// <returns>Bool based on success or failure</returns>
-        public async Task<bool> SendImage(string matrixFileUrl, string filename, string hostServer, string accessToken)
+        /// <param name="fileMessage">MatrixFileMessage object that contains information for sending</param>
+        /// <inheritdoc cref="SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage,string,string)"/>
+        public async Task<bool> SendMessage(MatrixFileMessage fileMessage, string hostServer, string accessToken)
         {
-            var imageJObject = new JObject
+            JObject jsonContent;
+
+            if (fileMessage.Type == "m.file")
             {
-                ["body"] = filename,
+                jsonContent = new JObject
+                {
+                    ["body"] = fileMessage.Filename ?? "",
 
-                ["info"] = new JObject(),
+                    ["filename"] = fileMessage.Filename ?? "",
 
-                ["msgtype"] = "m.image",
+                    ["info"] = new JObject(),
 
-                ["url"] = matrixFileUrl
-            };
+                    ["msgtype"] = "m.file",
 
-            return await SendMessage(imageJObject, hostServer, accessToken);
-        }
-
-        /// <summary>
-        /// Send an audio file via a mxcUri
-        /// </summary>
-        /// <inheritdoc cref="SendImage"/>
-        public async Task<bool> SendAudio(string matrixFileUrl, string filename, string hostServer, string accessToken)
-        {
-            var audioJObject = new JObject
+                    ["url"] = fileMessage.Filename
+                };
+            }
+            else
             {
-                ["body"] = filename,
+                jsonContent = new JObject
+                {
+                    ["body"] = fileMessage.Filename ?? "",
 
-                ["info"] = new JObject(),
+                    ["info"] = new JObject(),
 
-                ["msgtype"] = "m.audio",
+                    ["msgtype"] = fileMessage.Type ?? "",
 
-                ["url"] = matrixFileUrl
-            };
+                    ["url"] = fileMessage.MxcUrl
+                };
+            }
 
-            return await SendMessage(audioJObject, hostServer, accessToken);
-        }
-
-        /// <summary>
-        /// Send a video file via a mxcUri
-        /// </summary>
-        /// <inheritdoc cref="SendImage"/>
-        public async Task<bool> SendVideo(string matrixFileUrl, string filename, string hostServer, string accessToken)
-        {
-            var videoJObject = new JObject
-            {
-                ["body"] = filename,
-
-                ["info"] = new JObject(),
-
-                ["msgtype"] = "m.video",
-
-                ["url"] = matrixFileUrl
-            };
-
-            return await SendMessage(videoJObject, hostServer, accessToken);
-        }
-
-        /// <summary>
-        /// Send a file via a mxcUri
-        /// </summary>
-        /// <inheritdoc cref="SendImage"/>
-        public async Task<bool> SendFile(string matrixFileUrl, string filename, string hostServer, string accessToken)
-        {
-            var fileJObject = new JObject
-            {
-                ["body"] = filename,
-
-                ["filename"] = filename,
-
-                ["info"] = new JObject(),
-
-                ["msgtype"] = "m.file",
-
-                ["url"] = matrixFileUrl
-            };
-
-            return await SendMessage(fileJObject, hostServer, accessToken);
+            return await SendMessageRequest(jsonContent, hostServer, accessToken);
         }
     }
 }
