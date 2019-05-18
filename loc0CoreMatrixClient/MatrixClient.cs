@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.IO;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -100,6 +99,11 @@ namespace loc0CoreMatrixClient
 
                 ["device_id"] = credentials.DeviceId ?? ""
             };
+
+            if (!Regex.IsMatch(host, @"^https:\/\/"))
+            {
+                host = "https://" + host;
+            }
 
             HttpResponseMessage loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJObject.ToString());
 
@@ -224,11 +228,12 @@ namespace loc0CoreMatrixClient
         public async Task<List<string>> JoinRooms(List<string> roomsToJoin, bool retryFailure = false) //replace List<string> with something else, i don't know what yet
         {
             var responseList = new List<string>();
+            int roomSuccessfullyJoined = 1;
 
             for (var i = 0; i < roomsToJoin.Count; i++)
             {
                 var room = roomsToJoin[i];
-                Console.WriteLine($"Joining {room}");
+                Console.Write($"\rJoining room [{roomSuccessfullyJoined}/{roomsToJoin.Count}]");
 
                 if (Rooms.ContainsKey(room))
                 {
@@ -244,6 +249,13 @@ namespace loc0CoreMatrixClient
                 try
                 {
                     roomResponse.EnsureSuccessStatusCode();
+
+                    responseList.Add($"Successfully Joined {room}");
+                    JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
+
+                    MatrixRoom newRoom = new MatrixRoom((string)roomResponseJObject["room_id"], room);
+                    Rooms.Add(newRoom.RoomId, newRoom);
+                    roomSuccessfullyJoined++;
                 }
                 catch (HttpRequestException)
                 {
@@ -257,14 +269,10 @@ namespace loc0CoreMatrixClient
                     }
                 }
 
-                responseList.Add($"Successfully Joined {room}");
-                JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
-
-                MatrixRoom newRoom = new MatrixRoom((string)roomResponseJObject["room_id"], room);
-                Rooms.Add(newRoom.RoomId, newRoom);
-
-            await Task.Delay(2000);
+                await Task.Delay(2000);
             }
+
+            Console.WriteLine(); //since the progress output is a Write not Writeline this is needed so the next thing outputted will be on the next line
 
             return responseList;
         }
