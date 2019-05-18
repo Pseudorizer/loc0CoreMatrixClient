@@ -67,6 +67,9 @@
             Full userid of account
             </summary>
         </member>
+        <member name="M:loc0CoreMatrixClient.MatrixClient.#ctor(System.Int32)">
+            <param name="messageLimit">Number of messages to take on each sync</param>
+        </member>
         <member name="T:loc0CoreMatrixClient.MatrixClient.MessageReceivedEvent">
             <inheritdoc />
         </member>
@@ -82,9 +85,6 @@
             <summary>
             Event for any incoming invites
             </summary>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixClient.#ctor(System.Int32)">
-            <param name="messageLimit">Number of messages to take on each sync</param>
         </member>
         <member name="M:loc0CoreMatrixClient.MatrixClient.Login(System.String,loc0CoreMatrixClient.Models.MatrixCredentials)">
             <summary>
@@ -124,32 +124,14 @@
             <returns>MatrixFileMessage with MxcUrl and Type</returns>
             <exception cref="T:System.IO.FileNotFoundException"></exception>
         </member>
-        <member name="T:loc0CoreMatrixClient.MatrixClient.SyncAlreadyActiveException">
-            <summary>
-            Exception for a user attempting to start a second listener thread
-            </summary>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixClient.SyncAlreadyActiveException.#ctor">
-            <inheritdoc />
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixClient.SyncAlreadyActiveException.#ctor(System.String)">
-            <inheritdoc />
-            <param name="message">Message to display</param>
-        </member>
         <member name="M:loc0CoreMatrixClient.MatrixClient.StartListener">
             <summary>
             Starts an event listener for any rooms you've joined
             </summary>
-            <returns></returns>
         </member>
         <member name="M:loc0CoreMatrixClient.MatrixClient.StopListener">
             <summary>
             Stop listening for events in the rooms you've joined
-            </summary>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixClient.Sync(System.Threading.CancellationToken)">
-            <summary>
-            Contact the sync endpoint in a fire and forget background task
             </summary>
         </member>
         <member name="T:loc0CoreMatrixClient.MatrixHttp">
@@ -188,6 +170,11 @@
             </summary>
             <param name="url">Endpoint</param>
             <returns>HttpResponseMessage for consumption</returns>
+        </member>
+        <member name="M:loc0CoreMatrixClient.MatrixListener.Sync(loc0CoreMatrixClient.MatrixClient,System.Threading.CancellationToken)">
+            <summary>
+            Contact the sync endpoint in a fire and forget background task
+            </summary>
         </member>
         <member name="T:loc0CoreMatrixClient.MatrixRoom">
             <summary>

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,11 +19,11 @@ namespace loc0CoreMatrixClient
     public class MatrixClient
     {
         private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
-        private readonly List<MatrixChannel> _activeRoomsList = new List<MatrixChannel>();
         private readonly int _messageLimit;
+        private MatrixListener _matrixListener;
         private CancellationTokenSource _syncCancellationToken;
-        private bool _syncActive;
-        private string _filterId;
+        internal readonly List<MatrixChannel> ActiveRoomsList = new List<MatrixChannel>();
+        internal string FilterId;
 
         /// <summary>
         /// AccessToken to be used when interacting with the API
@@ -47,6 +45,12 @@ namespace loc0CoreMatrixClient
         /// </summary>
         public string UserId { get; private set; }
 
+        /// <param name="messageLimit">Number of messages to take on each sync</param>
+        public MatrixClient(int messageLimit = 10)
+        {
+            _messageLimit = messageLimit;
+        }
+
         /// <inheritdoc />
         public delegate void MessageReceivedEvent(MessageReceivedEventArgs args);
 
@@ -62,12 +66,6 @@ namespace loc0CoreMatrixClient
         /// Event for any incoming invites
         /// </summary>
         public event InviteReceivedEvent InviteReceived;
-
-        /// <param name="messageLimit">Number of messages to take on each sync</param>
-        public MatrixClient(int messageLimit = 10)
-        {
-            _messageLimit = messageLimit;
-        }
 
         /// <summary>
         /// Login to a Matrix account
@@ -178,7 +176,7 @@ namespace loc0CoreMatrixClient
 
             var filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
             JObject filterJObjectParsed = JObject.Parse(filterResponseContent);
-            _filterId = (string)filterJObjectParsed["filter_id"];
+            FilterId = (string)filterJObjectParsed["filter_id"];
 
             return true;
         }
@@ -233,7 +231,7 @@ namespace loc0CoreMatrixClient
                     roomResponse.EnsureSuccessStatusCode();
                     responseList.Add($"Successfully Joined {room}");
                     JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
-                    _activeRoomsList.Add(new MatrixChannel((string)roomResponseJObject["room_id"]));
+                    ActiveRoomsList.Add(new MatrixChannel((string)roomResponseJObject["room_id"]));
                 }
                 catch (HttpRequestException)
                 {
@@ -326,147 +324,22 @@ namespace loc0CoreMatrixClient
         }
 
         /// <summary>
-        /// Exception for a user attempting to start a second listener thread
-        /// </summary>
-        public class SyncAlreadyActiveException : Exception
-        {
-            /// <inheritdoc />
-            public SyncAlreadyActiveException()
-            {
-            }
-
-            /// <inheritdoc />
-            /// <param name="message">Message to display</param>
-            public SyncAlreadyActiveException(string message)
-            : base(message)
-            {
-            }
-        }
-
-        /// <summary>
         /// Starts an event listener for any rooms you've joined
         /// </summary>
-        /// <returns></returns>
-        public void StartListener()
+        public async void StartListener()
         {
-            if (_syncActive)
-                throw new SyncAlreadyActiveException("You can't start another listener");
-
-            _syncActive = true;
             _syncCancellationToken = new CancellationTokenSource();
-            Sync(_syncCancellationToken.Token).ConfigureAwait(false);
+            _matrixListener = new MatrixListener();
+
+            await Task.Run(() => _matrixListener.Sync(this, _syncCancellationToken.Token), _syncCancellationToken.Token);
         }
 
         /// <summary>
         /// Stop listening for events in the rooms you've joined
         /// </summary>
-        public void StopListener()
-        {
-            if (_syncCancellationToken != null)
-            {
-                _syncCancellationToken.Cancel();
-                _syncActive = false;
-            }
-        }
+        public void StopListener() => _syncCancellationToken?.Cancel();
 
-        /// <summary>
-        /// Contact the sync endpoint in a fire and forget background task
-        /// </summary>
-        private async Task Sync(CancellationToken syncCancellationToken)
-        {
-            var nextBatch = string.Empty;
-
-            while (string.IsNullOrWhiteSpace(nextBatch) && !syncCancellationToken.IsCancellationRequested)
-            {
-                nextBatch = await FirstSync();
-                await Task.Delay(2000, syncCancellationToken);
-            }
-
-            while (!syncCancellationToken.IsCancellationRequested)
-            {
-                HttpResponseMessage syncResponseMessage = await _backendHttpClient.Get(
-                    $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&since={nextBatch}&access_token={AccessToken}");
-                try
-                {
-                    syncResponseMessage.EnsureSuccessStatusCode();
-                }
-                catch (HttpRequestException)
-                {
-                    Console.WriteLine("Sync failed");
-                    await Task.Delay(2000, syncCancellationToken);
-                    continue;
-                }
-
-                var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
-
-                JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
-
-                nextBatch = (string)syncResponseJObject["next_batch"];
-
-                SyncChecks(syncResponseJObject);
-
-                await Task.Delay(2000, syncCancellationToken);
-            }
-        }
-
-        private async Task<string> FirstSync()
-        {
-            HttpResponseMessage firstSyncResponse = await _backendHttpClient.Get(
-                $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&access_token={AccessToken}");
-
-            try
-            {
-                firstSyncResponse.EnsureSuccessStatusCode();
-            }
-            catch (HttpRequestException)
-            {
-                Console.WriteLine("Initial Sync failed");
-                return null;
-            }
-
-            var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
-
-            JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
-            return (string)firstSyncJObject["next_batch"];
-        }
-
-        private void SyncChecks(JObject syncJObject)
-        {
-            JToken roomJToken = syncJObject["rooms"]["join"];
-
-            if (roomJToken.HasValues) //Process new messages
-            {
-                foreach (JToken room in roomJToken.Children())
-                {
-                    var roomJProperty = (JProperty)room;
-                    var roomId = roomJProperty.Name;
-
-                    if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
-
-                    foreach (JToken message in room.First["timeline"]["events"].Children())
-                    {
-                        var sender = (string)message["sender"];
-                        var body = (string)message["content"]["body"];
-
-                        var messageArgs = new MessageReceivedEventArgs(roomId, body, sender);
-                        MessageReceived?.Invoke(messageArgs);
-                    }
-                }
-            }
-
-            JToken inviteJToken = syncJObject["rooms"]["invite"];
-
-            if (inviteJToken.HasValues) //UNTESTED
-            {
-                foreach (JToken room in inviteJToken.Children())
-                {
-                    var roomIdJProperty = (JProperty)room;
-                    string roomId = roomIdJProperty.Name;
-
-                    var inviteArgs = new InviteReceivedEventArgs(roomId);
-                    InviteReceived?.Invoke(inviteArgs);
-                }
-            }
-        }
+        internal void OnMessageReceived(MessageReceivedEventArgs args) => MessageReceived?.Invoke(args);
+        internal void OnInviteReceived(InviteReceivedEventArgs args) => InviteReceived?.Invoke(args);
     }
 }
