@@ -90,6 +90,8 @@ namespace loc0CoreMatrixClient
 
                     foreach (JToken message in room.First["timeline"]["events"].Children())
                     {
+                        if (!message["content"].HasValues) continue;
+
                         var sender = (string)message["sender"];
                         var body = (string)message["content"]["body"];
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
 using loc0CoreMatrixClient.Models;
 using Newtonsoft.Json.Linq;
 
@@ -23,11 +24,8 @@ namespace loc0CoreMatrixClient
         /// </summary>
         public string RoomAlias { get; }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="roomId"></param>
-        /// <param name="roomAlias"></param>
+        /// <param name="roomId">Room ID I.E. !ID:Host</param>
+        /// <param name="roomAlias">Room Alias I.E. #Name:Host</param>
         public MatrixRoom(string roomId = null, string roomAlias = null)
         {
             RoomId = roomId;
@@ -41,7 +39,7 @@ namespace loc0CoreMatrixClient
 
             if (string.IsNullOrWhiteSpace(RoomId))
             {
-                HttpResponseMessage getRoomIdResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/client/r0/directory/room/{RoomAlias}");
+                HttpResponseMessage getRoomIdResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/client/r0/directory/room/{HttpUtility.UrlEncode(RoomAlias)}");
 
                 try
                 {
@@ -60,7 +58,7 @@ namespace loc0CoreMatrixClient
             }
 
             HttpResponseMessage sendResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{RoomId}/send/m.room.message?access_token={accessToken}", jsonContent.ToString());
+                $"{hostServer}/_matrix/client/r0/rooms/{HttpUtility.UrlEncode(RoomId)}/send/m.room.message?access_token={accessToken}", jsonContent.ToString());
 
             try
             {

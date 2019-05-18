@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using loc0CoreMatrixClient.Events;
 using loc0CoreMatrixClient.Models;
 using MimeTypes;
@@ -161,7 +162,7 @@ namespace loc0CoreMatrixClient
                 ["event_fields"] = new JArray("content", "sender")
             };
 
-            var filterUrl = $"{HomeServer}/_matrix/client/r0/user/{UserId}/filter?access_token={AccessToken}";
+            var filterUrl = $"{HomeServer}/_matrix/client/r0/user/{HttpUtility.UrlEncode(UserId)}/filter?access_token={AccessToken}";
 
             HttpResponseMessage filterResponse =
                 await _backendHttpClient.Post(filterUrl, filterJObject.ToString());
@@ -230,7 +231,7 @@ namespace loc0CoreMatrixClient
                 }
 
                 var requestUrl =
-                    $"{HomeServer}/_matrix/client/r0/join/{room}?access_token={AccessToken}";
+                    $"{HomeServer}/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}?access_token={AccessToken}";
 
                 HttpResponseMessage roomResponse = await _backendHttpClient.Post(requestUrl);
 
@@ -297,7 +298,7 @@ namespace loc0CoreMatrixClient
             var fileBytes = File.ReadAllBytes(filePath);
 
             HttpResponseMessage uploadResponse =
-                await _backendHttpClient.Post($"{HomeServer}/_matrix/media/r0/upload?filename={filename}&access_token={AccessToken}", fileBytes,
+                await _backendHttpClient.Post($"{HomeServer}/_matrix/media/r0/upload?filename={HttpUtility.UrlEncode(filename)}&access_token={AccessToken}", fileBytes,
                     contentType);
 
             try
