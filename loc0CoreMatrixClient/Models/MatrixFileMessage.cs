@@ -1,4 +1,6 @@
-﻿namespace loc0CoreMatrixClient.Models
+﻿using Newtonsoft.Json;
+
+namespace loc0CoreMatrixClient.Models
 {
     /// <summary>
     /// Defines an object for storing information about a file for sending
@@ -8,21 +10,36 @@
         /// <summary>
         /// Filename to be used
         /// </summary>
-        public string Filename { get; set; }
+        [JsonProperty("filename")]
+        public string Filename { get; set; } = "";
 
         /// <summary>
         /// A description for the file, defaults to the filename
         /// </summary>
-        public string Description { get; set; }
+        [JsonProperty("body")]
+        public string Description { get; set; } = "";
+
+        /// <summary>
+        /// Empty info class for now
+        /// </summary>
+        [JsonProperty("info")]
+        public Info InfoObj { get; } = new Info();
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public class Info { }
 
         /// <summary>
         /// Message type I.E. m.image
         /// </summary>
-        public string Type { get; set; }
+        [JsonProperty("msgtype")]
+        public string Type { get; set; } = "";
 
         /// <summary>
         /// MxcUrl to be used when sending message
         /// </summary>
-        public string MxcUrl { get; set; }
+        [JsonProperty("url")]
+        public string MxcUrl { get; set; } = "";
     }
 }

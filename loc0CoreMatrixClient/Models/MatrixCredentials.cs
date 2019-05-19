@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace loc0CoreMatrixClient.Models
 {
     /// <summary>
@@ -8,21 +10,46 @@ namespace loc0CoreMatrixClient.Models
         /// <summary>
         /// Username of the account
         /// </summary>
-        public string UserName { get; set; }
+        [JsonProperty("user")]
+        public readonly string UserName;
 
         /// <summary>
         /// Desired device name, if it's not specified one will be auto-generated on every login
         /// </summary>
-        public string DeviceName { get; set; }
+        [JsonProperty("initial_device_display_name")]
+        public readonly string DeviceName;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        [JsonProperty("type")]
+        public readonly string Type = "m.login.password";
 
         /// <summary>
         /// Account password
         /// </summary>
-        public string Password { get; set; }
+        [JsonProperty("password")]
+        public readonly string Password;
 
         /// <summary>
         /// Desired device id, if it's not specified one will be auto-generated on every login
         /// </summary>
-        public string DeviceId { get; set; }
+        [JsonProperty("device_id")]
+        public readonly string DeviceId;
+
+        /// <summary>
+        /// Credentials required for logging in
+        /// </summary>
+        /// <param name="userName">Username for account</param>
+        /// <param name="password">Password for account</param>
+        /// <param name="deviceId">Desired device ID, if left empty one will be auto generated</param>
+        /// <param name="deviceName">Desired device name, if left empty one will be auto generated</param>
+        public MatrixCredentials(string userName, string password, string deviceId = null, string deviceName = null)
+        {
+            DeviceId = deviceId;
+            Password = password;
+            DeviceName = deviceName;
+            UserName = userName;
+        }
     }
 }

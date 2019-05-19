@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using loc0CoreMatrixClient.Events;
+using loc0CoreMatrixClient.Exceptions;
 using loc0CoreMatrixClient.Models;
 using MimeTypes;
 using Newtonsoft.Json.Linq;
@@ -17,8 +18,8 @@ namespace loc0CoreMatrixClient
     /// </summary>
     public class MatrixClient
     {
-        private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
         private readonly int _messageLimit;
+        private MatrixHttp _backendHttpClient;
         private MatrixListener _matrixListener;
         private CancellationTokenSource _syncCancellationToken;
         internal Dictionary<string, MatrixRoom> Rooms = new Dictionary<string, MatrixRoom>();
@@ -78,24 +79,11 @@ namespace loc0CoreMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> Login(string host, MatrixCredentials credentials)
         {
-            JObject loginJObject = new JObject
-            {
-                ["type"] = "m.login.password",
+            _backendHttpClient = new MatrixHttp(host);
 
-                ["identifier"] = new JObject
-                {
-                    ["type"] = "m.id.user",
-                    ["user"] = credentials.UserName ?? ""
-                },
+            JObject loginJObject = JObject.FromObject(credentials);
 
-                ["password"] = credentials.Password ?? "",
-
-                ["initial_device_display_name"] = credentials.DeviceName ?? "",
-
-                ["device_id"] = credentials.DeviceId ?? ""
-            };
-
-            HttpResponseMessage loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJObject.ToString());
+            HttpResponseMessage loginResponse = await _backendHttpClient.Post("/_matrix/client/r0/login", false, loginJObject);
 
             try
             {
@@ -103,7 +91,7 @@ namespace loc0CoreMatrixClient
             }
             catch (HttpRequestException)
             {
-                return false;
+                throw new MatrixException("Login details were incorrect"); //need to look at the responses/error codes as there may have just been another error
             }
 
             var loginResponseContent = await loginResponse.Content.ReadAsStringAsync();
@@ -114,6 +102,8 @@ namespace loc0CoreMatrixClient
             DeviceId = (string)loginResponseJObject["device_id"];
             HomeServer = (string)loginResponseJObject["home_server"];
             UserId = (string)loginResponseJObject["user_id"];
+
+            _backendHttpClient.SetAccessToken(AccessToken);
 
             var filtersResult = await UploadFilters();
 
@@ -158,10 +148,10 @@ namespace loc0CoreMatrixClient
                 ["event_fields"] = new JArray("content", "sender")
             };
 
-            var filterUrl = $"{HomeServer}/_matrix/client/r0/user/{HttpUtility.UrlEncode(UserId)}/filter?access_token={AccessToken}";
+            var filterUrl = $"/_matrix/client/r0/user/{HttpUtility.UrlEncode(UserId)}/filter";
 
             HttpResponseMessage filterResponse =
-                await _backendHttpClient.Post(filterUrl, filterJObject.ToString());
+                await _backendHttpClient.Post(filterUrl, true, filterJObject);
 
             try
             {
@@ -185,7 +175,7 @@ namespace loc0CoreMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> Logout()
         {
-            HttpResponseMessage logoutResponse = await _backendHttpClient.Post($"{HomeServer}/_matrix/client/r0/logout?access_token={AccessToken}");
+            HttpResponseMessage logoutResponse = await _backendHttpClient.Post("/_matrix/client/r0/logout", true, null);
 
             try
             {
@@ -195,6 +185,8 @@ namespace loc0CoreMatrixClient
             {
                 return false;
             }
+
+            _syncCancellationToken.Cancel();
 
             AccessToken = "";
             DeviceId = "";
@@ -226,10 +218,7 @@ namespace loc0CoreMatrixClient
                     continue;
                 }
 
-                var requestUrl =
-                    $"{HomeServer}/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}?access_token={AccessToken}";
-
-                HttpResponseMessage roomResponse = await _backendHttpClient.Post(requestUrl);
+                HttpResponseMessage roomResponse = await _backendHttpClient.Post($"/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}", true, null);
 
                 try
                 {
@@ -238,7 +227,7 @@ namespace loc0CoreMatrixClient
                     responseList.Add($"Successfully Joined {room}");
                     JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
 
-                    MatrixRoom newRoom = new MatrixRoom((string)roomResponseJObject["room_id"], room);
+                    MatrixRoom newRoom = new MatrixRoom(HomeServer, AccessToken, (string)roomResponseJObject["room_id"], room);
                     Rooms.Add(newRoom.RoomId, newRoom);
                     roomSuccessfullyJoined++;
                 }
@@ -310,8 +299,8 @@ namespace loc0CoreMatrixClient
             var fileBytes = File.ReadAllBytes(filePath);
 
             HttpResponseMessage uploadResponse =
-                await _backendHttpClient.Post($"{HomeServer}/_matrix/media/r0/upload?filename={HttpUtility.UrlEncode(filename)}&access_token={AccessToken}", fileBytes,
-                    contentType);
+                await _backendHttpClient.Post($"/_matrix/media/r0/upload?filename={HttpUtility.UrlEncode(filename)}", true, fileBytes,
+                    new Dictionary<string, string>() { { "Content-Type", contentType } });
 
             try
             {

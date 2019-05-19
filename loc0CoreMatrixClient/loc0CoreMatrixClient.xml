@@ -42,6 +42,23 @@
             <param name="message">Filename from message chunk</param>
             <param name="senderId">SenderID from message chunk</param>
         </member>
+        <member name="T:loc0CoreMatrixClient.Exceptions.MatrixException">
+            <summary>
+            General exception for errors relating to the client
+            </summary>
+        </member>
+        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixException.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixException.#ctor(System.String)">
+            <inheritdoc />
+            <param name="message">Message to be displayed</param>
+        </member>
+        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixException.#ctor(System.String,System.Exception)">
+            <inheritdoc />
+            <param name="message">Message to be displayed</param>
+            <param name="innerException"></param>
+        </member>
         <member name="T:loc0CoreMatrixClient.MatrixClient">
             <summary>
             Client for interacting with the Matrix API
@@ -127,7 +144,7 @@
             </summary>
             <param name="roomId">Room ID which acts as the key</param>
             <returns>MatrixRoom object for that room</returns>
-            /// <exception cref="T:System.Collections.Generic.KeyNotFoundException"></exception>
+            <exception cref="T:System.Collections.Generic.KeyNotFoundException"></exception>
         </member>
         <member name="M:loc0CoreMatrixClient.MatrixClient.Upload(System.String)">
             <summary>
@@ -152,43 +169,29 @@
             Methods for communicating with the Matrix API
             </summary>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixHttp.Post(System.String)">
-            <summary>
-            Wrapper for posting to a Matrix endpoint without content
-            </summary>
-            <param name="url">Endpoint</param>
-            <returns>HttpResponseMessage for consumption</returns>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixHttp.Post(System.String,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixHttp.Post(System.String,System.Boolean,Newtonsoft.Json.Linq.JObject,System.Collections.Generic.Dictionary{System.String,System.String})">
             <summary>
             Wrapper for posting to a Matrix endpoint with content
             </summary>
-            <param name="url">Endpoint</param>
-            <param name="content">Content to be posted</param>
-            <param name="contentType">Content type, defaults to application/json</param>
+            <param name="apiPath">Endpoint</param>
+            <param name="authenticate">Whether you need to authenticate or not</param>
+            <param name="data">Post data as a JObject</param>
+            <param name="contentHeaders">Any content headers needed, format = HEADER:VALUE</param>
             <returns>HttpResponseMessage for consumption</returns>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixHttp.Post(System.String,System.Byte[],System.String)">
-            <summary>
-            Wrapper for posting to a Matrix endpoint with a byte[]
-            </summary>
-            <param name="url">Endpoint</param>
-            <param name="content">Content as a byte[] to be posted</param>
-            <param name="contentType">Content type</param>
-            <returns>HttpResponseMessage for consumption</returns>
-        </member>
-        <member name="M:loc0CoreMatrixClient.MatrixHttp.Get(System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixHttp.Get(System.String,System.Boolean)">
             <summary>
             Wrapper for getting from a Matrix endpoint
             </summary>
-            <param name="url">Endpoint</param>
+            <param name="apiPath">Endpoint</param>
+            <param name="authenticate"></param>
             <returns>HttpResponseMessage for consumption</returns>
         </member>
         <member name="M:loc0CoreMatrixClient.MatrixHttp.Put(System.String,System.String,System.String)">
             <summary>
             Wrapper for putting from a Matrix endpoint
             </summary>
-            <param name="url">Endpoint</param>
+            <param name="apiPath">Endpoint</param>
             <param name="content">Content to be posted</param>
             <param name="contentType">Content type, defaults to application/json</param>
             <returns>HttpResponseMessage for consumption</returns>
@@ -213,11 +216,19 @@
             Room alias for room
             </summary>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.#ctor(System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.#ctor(System.String,System.String,System.String,System.String)">
+            <param name="accessToken">Current access token</param>
             <param name="roomId">Room ID I.E. !ID:Host</param>
             <param name="roomAlias">Room Alias I.E. #Name:Host</param>
+            <param name="baseUrl">Home sever</param>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SetAccessToken(System.String)">
+            <summary>
+            Set access token for httpClient in use by room
+            </summary>
+            <param name="token">Access token</param>
+        </member>
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixTextMessage)">
             <summary>
             Send a text message to the room
             </summary>
@@ -226,7 +237,7 @@
             <param name="accessToken">Your clients access token</param>
             <returns>Bool based on success or failure</returns>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixFileMessage,System.String,System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixRoom.SendMessage(loc0CoreMatrixClient.Models.MatrixFileMessage)">
             <summary>
             Sends a file to the room
             </summary>
@@ -240,25 +251,39 @@
             Contains properties required for logging in to Matrix
             </summary>
         </member>
-        <member name="P:loc0CoreMatrixClient.Models.MatrixCredentials.UserName">
+        <member name="F:loc0CoreMatrixClient.Models.MatrixCredentials.UserName">
             <summary>
             Username of the account
             </summary>
         </member>
-        <member name="P:loc0CoreMatrixClient.Models.MatrixCredentials.DeviceName">
+        <member name="F:loc0CoreMatrixClient.Models.MatrixCredentials.DeviceName">
             <summary>
             Desired device name, if it's not specified one will be auto-generated on every login
             </summary>
         </member>
-        <member name="P:loc0CoreMatrixClient.Models.MatrixCredentials.Password">
+        <member name="F:loc0CoreMatrixClient.Models.MatrixCredentials.Type">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="F:loc0CoreMatrixClient.Models.MatrixCredentials.Password">
             <summary>
             Account password
             </summary>
         </member>
-        <member name="P:loc0CoreMatrixClient.Models.MatrixCredentials.DeviceId">
+        <member name="F:loc0CoreMatrixClient.Models.MatrixCredentials.DeviceId">
             <summary>
             Desired device id, if it's not specified one will be auto-generated on every login
             </summary>
+        </member>
+        <member name="M:loc0CoreMatrixClient.Models.MatrixCredentials.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>
+            Credentials required for logging in
+            </summary>
+            <param name="userName">Username for account</param>
+            <param name="password">Password for account</param>
+            <param name="deviceId">Desired device ID, if left empty one will be auto generated</param>
+            <param name="deviceName">Desired device name, if left empty one will be auto generated</param>
         </member>
         <member name="T:loc0CoreMatrixClient.Models.MatrixFileMessage">
             <summary>
@@ -272,7 +297,17 @@
         </member>
         <member name="P:loc0CoreMatrixClient.Models.MatrixFileMessage.Description">
             <summary>
-            A description for the file
+            A description for the file, defaults to the filename
+            </summary>
+        </member>
+        <member name="P:loc0CoreMatrixClient.Models.MatrixFileMessage.InfoObj">
+            <summary>
+            Empty info class for now
+            </summary>
+        </member>
+        <member name="T:loc0CoreMatrixClient.Models.MatrixFileMessage.Info">
+            <summary>
+            
             </summary>
         </member>
         <member name="P:loc0CoreMatrixClient.Models.MatrixFileMessage.Type">
@@ -295,9 +330,19 @@
             HTML formatted body
             </summary>
         </member>
+        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.Format">
+            <summary>
+            Format of the message, unless formatted body is being used it should remain empty
+            </summary>
+        </member>
         <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.Body">
             <summary>
             Plain text body
+            </summary>
+        </member>
+        <member name="P:loc0CoreMatrixClient.Models.MatrixTextMessage.MsgType">
+            <summary>
+            Message type is always m.text
             </summary>
         </member>
     </members>

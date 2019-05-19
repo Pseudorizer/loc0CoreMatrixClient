@@ -12,7 +12,7 @@ namespace loc0CoreMatrixClient
     /// </summary>
     public class MatrixRoom
     {
-        private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
+        private readonly MatrixHttp _backendHttpClient;
 
         /// <summary>
         /// Room id for room
@@ -24,22 +24,32 @@ namespace loc0CoreMatrixClient
         /// </summary>
         public string RoomAlias { get; }
 
+        /// <param name="accessToken">Current access token</param>
         /// <param name="roomId">Room ID I.E. !ID:Host</param>
         /// <param name="roomAlias">Room Alias I.E. #Name:Host</param>
-        public MatrixRoom(string roomId = null, string roomAlias = null)
+        /// <param name="baseUrl">Home sever</param>
+        public MatrixRoom(string baseUrl, string accessToken, string roomId = null, string roomAlias = null)
         {
             RoomId = roomId;
             RoomAlias = roomAlias;
+
+            _backendHttpClient = new MatrixHttp(baseUrl, accessToken);
         }
 
-        private async Task<bool> SendMessageRequest(JObject jsonContent, string hostServer, string accessToken)
+        /// <summary>
+        /// Set access token for httpClient in use by room
+        /// </summary>
+        /// <param name="token">Access token</param>
+        public void SetAccessToken(string token) => _backendHttpClient.SetAccessToken(token);
+
+        private async Task<bool> SendMessageRequest(JObject jsonContent)
         {
             if (RoomId == null && RoomAlias == null)
                 throw new NullReferenceException("Both RoomId and RoomAlias are null");
 
             if (string.IsNullOrWhiteSpace(RoomId))
             {
-                HttpResponseMessage getRoomIdResponse = await _backendHttpClient.Get($"{hostServer}/_matrix/client/r0/directory/room/{HttpUtility.UrlEncode(RoomAlias)}");
+                HttpResponseMessage getRoomIdResponse = await _backendHttpClient.Get($"/_matrix/client/r0/directory/room/{HttpUtility.UrlEncode(RoomAlias)}", false);
 
                 try
                 {
@@ -58,7 +68,7 @@ namespace loc0CoreMatrixClient
             }
 
             HttpResponseMessage sendResponse = await _backendHttpClient.Post(
-                $"{hostServer}/_matrix/client/r0/rooms/{HttpUtility.UrlEncode(RoomId)}/send/m.room.message?access_token={accessToken}", jsonContent.ToString());
+                $"/_matrix/client/r0/rooms/{HttpUtility.UrlEncode(RoomId)}/send/m.room.message", true, jsonContent);
 
             try
             {
@@ -78,20 +88,14 @@ namespace loc0CoreMatrixClient
         /// <param name="hostServer">Host server or home server the room resides on</param>
         /// <param name="accessToken">Your clients access token</param>
         /// <returns>Bool based on success or failure</returns>
-        public async Task<bool> SendMessage(MatrixTextMessage textMessage, string hostServer, string accessToken)
+        public async Task<bool> SendMessage(MatrixTextMessage textMessage)
         {
-            var textJObject = new JObject
-            {
-                ["msgtype"] = "m.text",
+            textMessage.Format = "";
+            var textJObject = JObject.FromObject(textMessage);
 
-                ["body"] = textMessage.Body ?? "",
+            textJObject["format"] = string.IsNullOrWhiteSpace(textMessage.FormattedBody) ? "" : "org.matrix.custom.html";
 
-                ["format"] = string.IsNullOrWhiteSpace(textMessage.FormattedBody) ? "" : "org.matrix.custom.html",
-
-                ["formatted_body"] = textMessage.FormattedBody ?? ""
-            };
-
-            return await SendMessageRequest(textJObject, hostServer, accessToken);
+            return await SendMessageRequest(textJObject);
         }
 
         /// <summary>
@@ -101,40 +105,16 @@ namespace loc0CoreMatrixClient
         /// <param name="hostServer">Host server or home server the room resides on</param>
         /// <param name="accessToken">Your clients access token</param>
         /// <returns>Bool based on success or failure</returns>
-        public async Task<bool> SendMessage(MatrixFileMessage fileMessage, string hostServer, string accessToken)
+        public async Task<bool> SendMessage(MatrixFileMessage fileMessage)
         {
-            JObject jsonContent;
+            JObject jsonContent = JObject.FromObject(fileMessage);
 
-            if (fileMessage.Type == "m.file")
+            if (fileMessage.Type != "m.file")
             {
-                jsonContent = new JObject
-                {
-                    ["body"] = fileMessage.Description ?? "",
-
-                    ["filename"] = fileMessage.Filename ?? "",
-
-                    ["info"] = new JObject(),
-
-                    ["msgtype"] = "m.file",
-
-                    ["url"] = fileMessage.MxcUrl ?? ""
-                };
-            }
-            else
-            {
-                jsonContent = new JObject
-                {
-                    ["body"] = fileMessage.Filename ?? "",
-
-                    ["info"] = new JObject(),
-
-                    ["msgtype"] = fileMessage.Type ?? "",
-
-                    ["url"] = fileMessage.MxcUrl ?? ""
-                };
+                jsonContent.Property("filename").Remove();
             }
 
-            return await SendMessageRequest(jsonContent, hostServer, accessToken);
+            return await SendMessageRequest(jsonContent);
         }
     }
 }

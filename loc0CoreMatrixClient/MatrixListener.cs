@@ -10,7 +10,7 @@ namespace loc0CoreMatrixClient
 {
     internal class MatrixListener
     {
-        private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
+        private MatrixHttp _backendHttpClient;
         private MatrixClient _client;
 
         /// <summary>
@@ -19,6 +19,8 @@ namespace loc0CoreMatrixClient
         internal async Task Sync(MatrixClient client, CancellationToken syncCancellationToken)
         {
             _client = client;
+            _backendHttpClient = new MatrixHttp(client.HomeServer, client.AccessToken);
+
             var nextBatch = string.Empty;
 
             while (string.IsNullOrWhiteSpace(nextBatch) && !syncCancellationToken.IsCancellationRequested)
@@ -30,7 +32,7 @@ namespace loc0CoreMatrixClient
             while (!syncCancellationToken.IsCancellationRequested)
             {
                 HttpResponseMessage syncResponseMessage = await _backendHttpClient.Get(
-                    $"{_client.HomeServer}/_matrix/client/r0/sync?filter={_client.FilterId}&since={nextBatch}&access_token={_client.AccessToken}");
+                    $"/_matrix/client/r0/sync?filter={_client.FilterId}&since={nextBatch}", true);
                 try
                 {
                     syncResponseMessage.EnsureSuccessStatusCode();
@@ -57,7 +59,7 @@ namespace loc0CoreMatrixClient
         private async Task<string> FirstSync()
         {
             HttpResponseMessage firstSyncResponse = await _backendHttpClient.Get(
-                $"{_client.HomeServer}/_matrix/client/r0/sync?filter={_client.FilterId}&access_token={_client.AccessToken}");
+                $"/_matrix/client/r0/sync?filter={_client.FilterId}", true);
 
             try
             {
