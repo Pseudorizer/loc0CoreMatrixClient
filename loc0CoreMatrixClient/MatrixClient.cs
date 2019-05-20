@@ -104,7 +104,11 @@ namespace loc0CoreMatrixClient
                     case HttpStatusCode.Forbidden:
                         throw new MatrixRequestException($"{error["error"]}. Login credentials were incorrect");
                     case HttpStatusCode.TooManyRequests:
-                        throw new MatrixRequestException($"{error["errcode"]} - {error["error"]}. Too many requests, you're being rate limited"); //Need to implement a rate limiting
+                        var rateLimit = (int) error["retry_after_ms"];
+
+                        Console.WriteLine($"You're being rate-limited, waiting {rateLimit}ms");
+                        await Task.Delay(rateLimit);
+                        return false;
                     default:
                         throw new MatrixRequestException($"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured, error code {loginResponse.StatusCode.ToString()}");
                 }
@@ -233,13 +237,15 @@ namespace loc0CoreMatrixClient
                 }
 
                 HttpResponseMessage roomResponse = await _backendHttpClient.Post($"/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}", true, null);
+                string roomContent = string.Empty;
 
                 try
                 {
+                    roomContent = await roomResponse.Content.ReadAsStringAsync();
                     roomResponse.EnsureSuccessStatusCode();
 
                     responseList.Add($"Successfully Joined {room}");
-                    JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
+                    JObject roomResponseJObject = JObject.Parse(roomContent);
 
                     MatrixRoom newRoom = new MatrixRoom(HomeServer, AccessToken, (string)roomResponseJObject["room_id"], room);
                     Rooms.Add(newRoom.RoomId, newRoom);
@@ -247,6 +253,22 @@ namespace loc0CoreMatrixClient
                 }
                 catch (HttpRequestException)
                 {
+                    JObject error = JObject.Parse(roomContent);
+
+                    switch (roomResponse.StatusCode)
+                    {
+                        case HttpStatusCode.Forbidden:
+                            throw new MatrixRequestException($"{error["errcode"]} - {error["error"]}. You're not allowed to enter {room}");
+                        case HttpStatusCode.TooManyRequests:
+                            var rateLimit = (int) error["retry_after_ms"];
+
+                            Console.WriteLine($"You're being rate-limited, waiting {rateLimit}ms");
+                            await Task.Delay(rateLimit);
+                            break;
+                        default:
+                            throw new MatrixRequestException($"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured with code {roomResponse.StatusCode.ToString()}");
+                    }
+
                     if (retryFailure)
                     {
                         i = i == 0 ? 0 : i - 1;
@@ -285,16 +307,29 @@ namespace loc0CoreMatrixClient
         /// Used to access a dictionary containing MatrixRoom objects for each room you've joined
         /// </summary>
         /// <param name="roomId">Room ID which acts as the key</param>
+        /// <param name="joinRoomIfNotFound">Attempt to join the room if it was not found</param>
         /// <returns>MatrixRoom object for that room</returns>
-        /// <exception cref="KeyNotFoundException"></exception>
-        public MatrixRoom GetMatrixRoomObject(string roomId)
+        /// <exception cref="KeyNotFoundException">Will be thrown if the room ID is not found</exception>
+        public async Task<MatrixRoom> GetMatrixRoomObject(string roomId, bool joinRoomIfNotFound)
         {
             if (Rooms.TryGetValue(roomId, out MatrixRoom room))
             {
                 return room;
             }
 
-            throw new KeyNotFoundException("roomId not found");
+            if (joinRoomIfNotFound)
+            {
+                var response = await JoinRoom(roomId);
+
+                Console.WriteLine(response);
+
+                if (Rooms.TryGetValue(roomId, out MatrixRoom newRoom))
+                {
+                    return newRoom;
+                }
+            }
+
+            throw new KeyNotFoundException("Room ID not found");
         }
 
         /// <summary>
@@ -317,13 +352,29 @@ namespace loc0CoreMatrixClient
                 await _backendHttpClient.Post($"/_matrix/media/r0/upload?filename={HttpUtility.UrlEncode(filename)}", true, fileBytes,
                     new Dictionary<string, string>() { { "Content-Type", contentType } });
 
+            string content = string.Empty;
+
             try
             {
+                content = await uploadResponse.Content.ReadAsStringAsync();
                 uploadResponse.EnsureSuccessStatusCode();
             }
             catch (HttpRequestException)
             {
-                return null;
+                JObject error = JObject.Parse(content);
+
+                switch (uploadResponse.StatusCode)
+                {
+                    case HttpStatusCode.TooManyRequests:
+                        var rateLimit = (int) error["retry_after_ms"];
+
+                        Console.WriteLine($"You're being rate-limited, waiting {rateLimit}ms");
+                        await Task.Delay(rateLimit);
+                        return null; //think of a way to retry
+                    default:
+                        throw new MatrixRequestException(
+                            $"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured with code {uploadResponse.StatusCode.ToString()}");
+                }
             }
 
             var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();

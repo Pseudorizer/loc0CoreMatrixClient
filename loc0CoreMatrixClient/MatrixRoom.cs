@@ -85,8 +85,6 @@ namespace loc0CoreMatrixClient
         /// Send a text message to the room
         /// </summary>
         /// <param name="textMessage">Message as a MatrixTextMessage</param>
-        /// <param name="hostServer">Host server or home server the room resides on</param>
-        /// <param name="accessToken">Your clients access token</param>
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> SendMessage(MatrixTextMessage textMessage)
         {
@@ -102,8 +100,6 @@ namespace loc0CoreMatrixClient
         /// Sends a file to the room
         /// </summary>
         /// <param name="fileMessage">MatrixFileMessage object that contains information for sending</param>
-        /// <param name="hostServer">Host server or home server the room resides on</param>
-        /// <param name="accessToken">Your clients access token</param>
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> SendMessage(MatrixFileMessage fileMessage)
         {
