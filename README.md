@@ -27,13 +27,7 @@ public static void Main()
 
 private static async Task Example()
 {
-    MatrixCredentials matrixCredentials = new MatrixCredentials
-    {
-        UserName = "",
-        Password = "",
-        DeviceName = "",
-        DeviceId = ""
-    };
+    MatrixCredentials matrixCredentials = new MatrixCredentials("Username", "Password", "DeviceID" " DeviceName");
 
     Console.WriteLine("Logging in...");
 
@@ -77,7 +71,7 @@ private static async void MessageReceivedHandlerExample(MessageReceivedEventArgs
             Body = "pong"
         };
 
-        var sendResult = await messageRoom.SendMessage(message, Client.HomeServer, Client.AccessToken);
+        var sendResult = await messageRoom.SendMessage(message);
     }
 }
 ```
@@ -189,7 +183,7 @@ Passes a InviteReceivedEventArgs to your handler
 
 ---
 ### MatrixCredentials
-#### **Usage:** `MatrixCredentials matrixCredentials = new MatrixCredentials();`
+#### **Usage:** `MatrixCredentials matrixCredentials = new MatrixCredentials(string:Username, string:Password, string:DeviceID string:DeviceName);`
 
 #### Properties
 `string:Username`
@@ -213,22 +207,22 @@ Device ID client should use, if one is not supplied it will be auto-generated
 
 ---
 ### MatrixRoom
-#### **Usage:** `MatrixRoom room = new MatrixRoom(string:roomId, string:roomAlias);`
+#### **Usage:** `MatrixRoom room = new MatrixRoom(string:homeServer, string:accessToken, string:roomId, string:roomAlias);`
 
 #### Methods
-`MatrixRoom(string:roomId, string:roomAlias)`
+`MatrixRoom(string:homeServer, string:accessToken, string:roomId, string:roomAlias)`
 
 Can take either a roomId or roomAlias
 
 ---
-`SendMessage(MatrixTextMessage:textMessage, string:hostServer, string:accessToken):bool`
+`SendMessage(MatrixTextMessage:textMessage):bool`
 
 Sends a text message to the room, can be either a simple plain text message or HTML formatted
 
 Returns a bool to indiciate success
 
 ---
-`SendMessage(MatrixFileMessage:textMessage, string:hostServer, string:accessToken):bool`
+`SendMessage(MatrixFileMessage:fileMessage):bool`
 
 Sends an uploaded file to the room via a MxcUrl
 
@@ -258,6 +252,16 @@ Plain text body of the message
 `string:FormattedBody`
 
 HTML formatted text body of the message, you do not need both, only one or the other
+
+---
+`string:Format`
+
+Format of the message, should be left empty unless the message is formatted, will be auto changed anyway
+
+---
+`string:MsgType`
+
+MsgType, should always be m.text
 
 ---
 ### MatrixFileMessage
