@@ -1,7 +1,7 @@
 # loc0CoreMatrixClient
 A Limited Matrix Client Built With .Net Core
 
-This is a limited client for interacting with the Matrix API. It can be used to create simple bots that recieved and send text/formatted messages, images, accept invites etc. I made this for personal use after I had to port a Discord bot of mine over to Riot. Also, still a pretty newb programmer so if you want to improve this in anyway feel free.
+This is a limited client for interacting with the [Matrix.org](https://matrix.org/docs/spec/client_server/r0.4.0.html) API. It can be used to create simple bots that recieved and send text/formatted messages, images, accept invites etc. I made this for personal use after I had to port a Discord bot of mine over to Riot. Also, still a pretty newb programmer so if you want to improve this in anyway feel free.
 
 # Current Progress
 * Login with username/password
