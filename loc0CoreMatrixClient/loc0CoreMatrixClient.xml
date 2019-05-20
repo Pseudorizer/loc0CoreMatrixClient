@@ -42,19 +42,19 @@
             <param name="message">Filename from message chunk</param>
             <param name="senderId">SenderID from message chunk</param>
         </member>
-        <member name="T:loc0CoreMatrixClient.Exceptions.MatrixException">
+        <member name="T:loc0CoreMatrixClient.Exceptions.MatrixRequestException">
             <summary>
             General exception for errors relating to the client
             </summary>
         </member>
-        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixException.#ctor">
+        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixRequestException.#ctor">
             <inheritdoc />
         </member>
-        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixException.#ctor(System.String)">
+        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixRequestException.#ctor(System.String)">
             <inheritdoc />
             <param name="message">Message to be displayed</param>
         </member>
-        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixException.#ctor(System.String,System.Exception)">
+        <member name="M:loc0CoreMatrixClient.Exceptions.MatrixRequestException.#ctor(System.String,System.Exception)">
             <inheritdoc />
             <param name="message">Message to be displayed</param>
             <param name="innerException"></param>
@@ -146,11 +146,12 @@
             <returns>MatrixRoom object for that room</returns>
             <exception cref="T:System.Collections.Generic.KeyNotFoundException"></exception>
         </member>
-        <member name="M:loc0CoreMatrixClient.MatrixClient.Upload(System.String)">
+        <member name="M:loc0CoreMatrixClient.MatrixClient.Upload(System.String,System.String)">
             <summary>
             Upload a file to Matrix
             </summary>
             <param name="filePath">Path to the file you want to upload</param>
+            <param name="contentType">Optionally specify content type, otherwise it will be automatically detected</param>
             <returns>MatrixFileMessage with MxcUrl and Type</returns>
             <exception cref="T:System.IO.FileNotFoundException"></exception>
         </member>

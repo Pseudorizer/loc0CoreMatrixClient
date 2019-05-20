@@ -5,16 +5,16 @@ namespace loc0CoreMatrixClient.Exceptions
     /// <summary>
     /// General exception for errors relating to the client
     /// </summary>
-    public class MatrixException : Exception
+    public class MatrixRequestException : Exception
     {
         /// <inheritdoc />
-        public MatrixException()
+        public MatrixRequestException()
         {
         }
 
         /// <inheritdoc />
         /// <param name="message">Message to be displayed</param>
-        public MatrixException(string message) :
+        public MatrixRequestException(string message) :
             base(message)
         {
         }
@@ -22,7 +22,7 @@ namespace loc0CoreMatrixClient.Exceptions
         /// <inheritdoc />
         /// <param name="message">Message to be displayed</param>
         /// <param name="innerException"></param>
-        public MatrixException(string message, Exception innerException) :
+        public MatrixRequestException(string message, Exception innerException) :
             base(message, innerException)
         {
         }

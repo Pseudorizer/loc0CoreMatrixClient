@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -85,16 +86,29 @@ namespace loc0CoreMatrixClient
 
             HttpResponseMessage loginResponse = await _backendHttpClient.Post("/_matrix/client/r0/login", false, loginJObject);
 
+            string loginResponseContent = string.Empty;
+
             try
             {
+                loginResponseContent = await loginResponse.Content.ReadAsStringAsync();
                 loginResponse.EnsureSuccessStatusCode();
             }
             catch (HttpRequestException)
             {
-                throw new MatrixException("Login details were incorrect"); //need to look at the responses/error codes as there may have just been another error
-            }
+                JObject error = JObject.Parse(loginResponseContent);
 
-            var loginResponseContent = await loginResponse.Content.ReadAsStringAsync();
+                switch (loginResponse.StatusCode)
+                {
+                    case HttpStatusCode.BadRequest:
+                        throw new MatrixRequestException($"{error["errcode"]} - {error["error"]}. Bad login request");
+                    case HttpStatusCode.Forbidden:
+                        throw new MatrixRequestException($"{error["error"]}. Login credentials were incorrect");
+                    case HttpStatusCode.TooManyRequests:
+                        throw new MatrixRequestException($"{error["errcode"]} - {error["error"]}. Too many requests, you're being rate limited"); //Need to implement a rate limiting
+                    default:
+                        throw new MatrixRequestException($"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured, error code {loginResponse.StatusCode.ToString()}");
+                }
+            }
 
             var loginResponseJObject = JObject.Parse(loginResponseContent);
 
@@ -287,14 +301,15 @@ namespace loc0CoreMatrixClient
         /// Upload a file to Matrix
         /// </summary>
         /// <param name="filePath">Path to the file you want to upload</param>
+        /// <param name="contentType">Optionally specify content type, otherwise it will be automatically detected</param>
         /// <returns>MatrixFileMessage with MxcUrl and Type</returns>
         /// <exception cref="FileNotFoundException"></exception>
-        public async Task<MatrixFileMessage> Upload(string filePath)
+        public async Task<MatrixFileMessage> Upload(string filePath, string contentType = null)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("File not found", Path.GetFileName(filePath));
 
-            var contentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath)); //credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
+            if (contentType == null) contentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath)); //credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
             var filename = Path.GetFileName(filePath);
             var fileBytes = File.ReadAllBytes(filePath);
 

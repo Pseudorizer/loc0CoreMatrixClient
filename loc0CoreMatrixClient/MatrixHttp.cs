@@ -37,7 +37,7 @@ namespace loc0CoreMatrixClient
         /// <param name="data">Post data as a JObject</param>
         /// <param name="contentHeaders">Any content headers needed, format = HEADER:VALUE</param>
         /// <returns>HttpResponseMessage for consumption</returns>
-        public async Task<HttpResponseMessage> Post(string apiPath, bool authenticate, JObject data, Dictionary<string, string> contentHeaders)
+        public async Task<HttpResponseMessage> Post(string apiPath, bool authenticate, JObject data, Dictionary<string, string> contentHeaders) //maybe i could use an out here? return a bool out a responsemessage
         {
             StringContent content;
 
@@ -55,7 +55,7 @@ namespace loc0CoreMatrixClient
                 content.Headers.Add(key, value);
             }
 
-            var url = AddHttps(AddBaseAndToken(apiPath, authenticate));
+            var url = AddBaseAndToken(apiPath, authenticate);
 
             return await _client.PostAsync(new Uri(url), content);
         }
@@ -79,7 +79,7 @@ namespace loc0CoreMatrixClient
                 content.Headers.Add(key, value);
             }
 
-            var url = AddHttps(AddBaseAndToken(apiPath, authenticate));
+            var url = AddBaseAndToken(apiPath, authenticate);
 
             return await _client.PostAsync(new Uri(url), content);
         }
@@ -97,7 +97,7 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Get(string apiPath, bool authenticate)
         {
-            return await _client.GetAsync(new Uri(AddHttps(AddBaseAndToken(apiPath, authenticate))));
+            return await _client.GetAsync(new Uri(AddBaseAndToken(apiPath, authenticate)));
         }
 
         /// <summary>
