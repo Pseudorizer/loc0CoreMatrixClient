@@ -1,7 +1,7 @@
 # loc0CoreMatrixClient
-A Lightweight Matrix Client Built With .Net Core
+A Limited Matrix Client Built With .Net Core
 
-This is a lightweight client for interacting with the Matrix API. It can be used to create simple bots that recieved and send text/formatted messages, images, accept invites etc. I made this for personal use after I had to port a Discord bot of mine over to Riot. Also, still a pretty newb programmer so if you want to improve this in anyway feel free.
+This is a limited client for interacting with the [Matrix.org](https://matrix.org/docs/spec/client_server/r0.4.0.html) API. It can be used to create simple bots that recieved and send text/formatted messages, images, accept invites etc. I made this for personal use after I had to port a Discord bot of mine over to Riot. Also, still a pretty newb programmer so if you want to improve this in anyway feel free.
 
 # Current Progress
 * Login with username/password
@@ -15,6 +15,66 @@ This is a lightweight client for interacting with the Matrix API. It can be used
 # Todo
 * Allow encryption to be used - Biggest task
 * Whatever the future tells me to do!
+
+# Example Code
+```
+private static readonly MatrixClient MatrixClient = new MatrixClient();
+
+public static void Main()
+{
+    Example().GetAwaiter().GetResult();
+}
+
+private static async Task Example()
+{
+    MatrixCredentials matrixCredentials = new MatrixCredentials("Username", "Password", "DeviceID" " DeviceName");
+
+    Console.WriteLine("Logging in...");
+
+    if (await MatrixClient.Login("hostServer", matrixCredentials))
+    {
+        Console.WriteLine("Success");
+
+        List<string> roomsToJoin = new List<string>
+        {
+            "#room1:host",
+            "!IDOfRoom:host"
+        };
+
+        List<string> joinResults = await MatrixClient.JoinRooms(roomsToJoin, true);
+
+        foreach (var joinResult in joinResults)
+        {
+            Console.WriteLine(joinResult);
+        }
+
+        MatrixClient.MessageReceived += MessageReceivedHandlerExample;
+
+        MatrixClient.StartListener();
+
+        await Task.Delay(-1);
+    }
+    else
+    {
+        Console.WriteLine("Failed");
+    }
+}
+
+private static async void MessageReceivedHandlerExample(MessageReceivedEventArgs args)
+{
+    MatrixRoom messageRoom = MatrixClient.GetMatrixRoomObject(args.RoomId);
+
+    if (args.SenderId == "a" && args.Message.StartsWith("ping"))
+    {
+        MatrixTextMessage message = new MatrixTextMessage
+        {
+            Body = "pong"
+        };
+
+        var sendResult = await messageRoom.SendMessage(message);
+    }
+}
+```
 
 # Documentation
 
@@ -55,6 +115,15 @@ Returns a list of strings containing success/failure messages
 Takes a single room to join
 
 Returns a single string containing a success/failure message
+
+---
+`GetMatrixRoomObject(string:roomId):MatrixRoom`
+
+Accesses a dictionary which contains MatrixRoom objects for each room you've joined
+
+Room ID acts as the key
+
+I'd recommend you use this to create a new MatrixRoom instance though it's not required
 
 ---
 `StartListener():void`
@@ -98,15 +167,6 @@ The user ID in use
 Id for filter being used in syncing
 
 ---
-`dictionary<string, MatrixRoom>:Rooms`
-
-Dictionary containg MatrixRoom objects for each room joined
-
-The key is the room ID which then returns a MatrixRoom object for that room
-
-You should use this instead of creating a new MatrixRoom instance when possible
-
----
 #### Events
 `MessageReceived:MessageReceivedEventArgs`
 
@@ -115,7 +175,6 @@ An event for recieved messages
 Passes a MessageReceivedEventArgs to your handler
 
 ---
-
 `InviteReceived:InviteReceivedEventArgs`
 
 An event for recieved invites
@@ -124,7 +183,7 @@ Passes a InviteReceivedEventArgs to your handler
 
 ---
 ### MatrixCredentials
-#### **Usage:** `MatrixCredentials matrixCredentials = new MatrixCredentials();`
+#### **Usage:** `MatrixCredentials matrixCredentials = new MatrixCredentials(string:Username, string:Password, string:DeviceID string:DeviceName);`
 
 #### Properties
 `string:Username`
@@ -148,47 +207,26 @@ Device ID client should use, if one is not supplied it will be auto-generated
 
 ---
 ### MatrixRoom
-#### **Usage:** `MatrixRoom room = new MatrixRoom(string:roomId, string:roomAlias);`
+#### **Usage:** `MatrixRoom room = new MatrixRoom(string:homeServer, string:accessToken, string:roomId, string:roomAlias);`
 
 #### Methods
-`MatrixRoom(string:roomId, string:roomAlias)`
+`MatrixRoom(string:homeServer, string:accessToken, string:roomId, string:roomAlias)`
 
 Can take either a roomId or roomAlias
 
 ---
-`SendText(MatrixTextMessage:textMessage, string:hostServer, string:accessToken):bool`
+`SendMessage(MatrixTextMessage:textMessage):bool`
 
-Sends a text message via a MatrixTextMessage object to the room, can be formatted or plain
+Sends a text message to the room, can be either a simple plain text message or HTML formatted
 
-Returns a bool to indicate success
-
----
-`SendImage(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
-
-Sends an image via a mxc url to the room
-
-Returns a bool to indicate success
+Returns a bool to indiciate success
 
 ---
-`SendAudio(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
+`SendMessage(MatrixFileMessage:fileMessage):bool`
 
-Sends an audio file via a mxc url to the room
+Sends an uploaded file to the room via a MxcUrl
 
-Returns a bool to indicate success
-
----
-`SendVideo(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
-
-Sends a video file via a mxc url to the room
-
-Returns a bool to indicate success
-
----
-`SendFile(string:matrixFileUrl, string:hostServer, string:accessToken):bool`
-
-Sends an generic file via a mxc url to the room
-
-Returns a bool to indicate success
+Returns a bool to indiciate success
 
 ---
 #### Properties
@@ -214,3 +252,37 @@ Plain text body of the message
 `string:FormattedBody`
 
 HTML formatted text body of the message, you do not need both, only one or the other
+
+---
+`string:Format`
+
+Format of the message, should be left empty unless the message is formatted, will be auto changed anyway
+
+---
+`string:MsgType`
+
+MsgType, should always be m.text
+
+---
+### MatrixFileMessage
+#### **Usage:** `MatrixFileMessage matrixFileMessage = new MatrixFileMessage();`
+
+#### Properties
+`string:Filename`
+
+Filename to be used when sending the file, this does not change the filename if someone downloads the file
+
+---
+`string:Description`
+
+Description to be used for the file, defaults to the filename
+
+---
+`string:Type`
+
+Type of the message being sent I.E. m.image, m.file etc.
+
+---
+`string:MxcUrl`
+
+Mxc url of the uploaded file
