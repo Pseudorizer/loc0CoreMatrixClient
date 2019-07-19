@@ -1,31 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Net;
 using System.Net.Http;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using loc0CoreMatrixClient.Events;
+using loc0CoreMatrixClient.Exceptions;
 using loc0CoreMatrixClient.Models;
 using MimeTypes;
 using Newtonsoft.Json.Linq;
-
-//credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
 
 namespace loc0CoreMatrixClient
 {
     /// <summary>
     /// Client for interacting with the Matrix API
     /// </summary>
-    public class MatrixClient
+    public class MatrixClient : IDisposable
     {
-        private readonly MatrixHttp _backendHttpClient = new MatrixHttp();
-        private readonly List<MatrixChannel> _activeRoomsList = new List<MatrixChannel>();
-        private readonly CancellationTokenSource _syncCancellationToken = new CancellationTokenSource();
         private readonly int _messageLimit;
-        private string _filterId;
+        private MatrixHttp _backendHttpClient;
+        private MatrixListener _matrixListener;
+        private CancellationTokenSource _syncCancellationToken;
+        internal Dictionary<string, MatrixRoom> Rooms = new Dictionary<string, MatrixRoom>();
+
+        /// <summary>
+        /// Id of filter used for API sync calls
+        /// </summary>
+        public string FilterId { get; private set; }
 
         /// <summary>
         /// AccessToken to be used when interacting with the API
@@ -47,6 +50,12 @@ namespace loc0CoreMatrixClient
         /// </summary>
         public string UserId { get; private set; }
 
+        /// <param name="messageLimit">Number of messages to take on each sync</param>
+        public MatrixClient(int messageLimit = 10)
+        {
+            _messageLimit = messageLimit;
+        }
+
         /// <inheritdoc />
         public delegate void MessageReceivedEvent(MessageReceivedEventArgs args);
 
@@ -63,12 +72,6 @@ namespace loc0CoreMatrixClient
         /// </summary>
         public event InviteReceivedEvent InviteReceived;
 
-        /// <param name="messageLimit">Number of messages to take on each sync</param>
-        public MatrixClient(int messageLimit = 10)
-        {
-            _messageLimit = messageLimit;
-        }
-
         /// <summary>
         /// Login to a Matrix account
         /// </summary>
@@ -77,49 +80,68 @@ namespace loc0CoreMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> Login(string host, MatrixCredentials credentials)
         {
-            JObject loginJObject = new JObject
-            {
-                ["type"] = "m.login.password",
+            _backendHttpClient = new MatrixHttp(host);
 
-                ["identifier"] = new JObject
-                {
-                    ["type"] = "m.id.user",
-                    ["user"] = credentials.UserName ?? ""
-                },
+            JObject loginJObject = JObject.FromObject(credentials);
 
-                ["password"] = credentials.Password ?? "",
+            HttpResponseMessage loginResponse = await _backendHttpClient.Post("/_matrix/client/r0/login", false, loginJObject);
 
-                ["initial_device_display_name"] = credentials.DeviceName ?? "",
-
-                ["device_id"] = credentials.DeviceId ?? ""
-            };
-
-            HttpResponseMessage loginResponse = await _backendHttpClient.Post($"{host}/_matrix/client/r0/login", loginJObject.ToString());
+            string loginResponseContent = string.Empty;
 
             try
             {
+                loginResponseContent = await loginResponse.Content.ReadAsStringAsync();
                 loginResponse.EnsureSuccessStatusCode();
             }
             catch (HttpRequestException)
             {
+                JObject error = JObject.Parse(loginResponseContent);
+
+                switch (loginResponse.StatusCode)
+                {
+                    case HttpStatusCode.BadRequest:
+                        throw new MatrixRequestException($"{error["errcode"]} - {error["error"]}. Bad login request");
+                    case HttpStatusCode.Forbidden:
+                        throw new MatrixRequestException($"{error["error"]}. Login credentials were incorrect");
+                    case HttpStatusCode.TooManyRequests:
+                        var rateLimit = (int) error["retry_after_ms"];
+
+                        Console.WriteLine($"You're being rate-limited, waiting {rateLimit}ms");
+                        await Task.Delay(rateLimit);
+                        return false;
+                    default:
+                        throw new MatrixRequestException(
+                            $"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured, error code {loginResponse.StatusCode.ToString()}");
+                }
+            }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Unknown error occurred in request");
                 return false;
             }
 
-            var loginResponseContent = await loginResponse.Content.ReadAsStringAsync();
+            JObject loginResponseJObject = JObject.Parse(loginResponseContent);
 
-            var loginResponseJObject = JObject.Parse(loginResponseContent);
+            AccessToken = (string)loginResponseJObject["access_token"];
+            DeviceId = (string)loginResponseJObject["device_id"];
+            HomeServer = (string)loginResponseJObject["home_server"];
+            UserId = (string)loginResponseJObject["user_id"];
 
-            AccessToken = (string) loginResponseJObject["access_token"];
-            DeviceId = (string) loginResponseJObject["device_id"];
-            HomeServer = (string) loginResponseJObject["home_server"];
-            UserId = (string) loginResponseJObject["user_id"];
+            _backendHttpClient.SetAccessToken(AccessToken);
 
-            if (!Regex.IsMatch(HomeServer, @"^https:\/\/"))
+            bool filtersResult = await UploadFilters();
+
+            if (!filtersResult)
             {
-                HomeServer = "https://" + HomeServer;
+                Console.WriteLine("Failed to upload filters");
             }
 
-            JObject filterJObject = new JObject
+            return true;
+        }
+
+        private async Task<bool> UploadFilters()
+        {
+            var filterJObject = new JObject
             {
                 ["room"] = new JObject
                 {
@@ -150,25 +172,28 @@ namespace loc0CoreMatrixClient
                 ["event_fields"] = new JArray("content", "sender")
             };
 
-            var filterUrl = $"{HomeServer}/_matrix/client/r0/user/{UserId}/filter?access_token={AccessToken}";
+            string filterUrl = $"/_matrix/client/r0/user/{HttpUtility.UrlEncode(UserId)}/filter";
 
             HttpResponseMessage filterResponse =
-                await _backendHttpClient.Post(filterUrl, filterJObject.ToString());
+                await _backendHttpClient.Post(filterUrl, true, filterJObject);
 
             try
             {
                 filterResponse.EnsureSuccessStatusCode();
             }
-            catch (HttpRequestException)
+            catch (Exception ex)
             {
-                return false;
+                if (ex is HttpRequestException || ex is NullReferenceException)
+                {
+                    return false;
+                }
+
+                throw;
             }
 
-            var filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
-
+            string filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
             JObject filterJObjectParsed = JObject.Parse(filterResponseContent);
-
-            _filterId = (string)filterJObjectParsed["filter_id"];
+            FilterId = (string)filterJObjectParsed["filter_id"];
 
             return true;
         }
@@ -179,16 +204,23 @@ namespace loc0CoreMatrixClient
         /// <returns>Bool based on success or failure</returns>
         public async Task<bool> Logout()
         {
-            HttpResponseMessage logoutResponse = await _backendHttpClient.Post($"{HomeServer}/_matrix/client/r0/logout?access_token={AccessToken}");
+            HttpResponseMessage logoutResponse = await _backendHttpClient.Post("/_matrix/client/r0/logout", true, null);
 
             try
             {
                 logoutResponse.EnsureSuccessStatusCode();
             }
-            catch (HttpRequestException)
+            catch (Exception ex)
             {
-                return false;
+                if (ex is HttpRequestException || ex is NullReferenceException)
+                {
+                    return false;
+                }
+
+                throw;
             }
+
+            _syncCancellationToken.Cancel();
 
             AccessToken = "";
             DeviceId = "";
@@ -207,25 +239,65 @@ namespace loc0CoreMatrixClient
         public async Task<List<string>> JoinRooms(List<string> roomsToJoin, bool retryFailure = false) //replace List<string> with something else, i don't know what yet
         {
             var responseList = new List<string>();
+            int roomSuccessfullyJoined = 1;
 
             for (var i = 0; i < roomsToJoin.Count; i++)
             {
-                var room = roomsToJoin[i];
-                Console.WriteLine($"Joining {room}");
+                string room = roomsToJoin[i];
+                Console.Write($"\rJoining room [{roomSuccessfullyJoined}/{roomsToJoin.Count}]");
 
-                var requestUrl =
-                    $"{HomeServer}/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}?access_token={AccessToken}";
+                if (Rooms.ContainsKey(room))
+                {
+                    Console.WriteLine($"Already joined {room}");
+                    continue;
+                }
 
-                HttpResponseMessage roomResponse = await _backendHttpClient.Post(requestUrl);
+                HttpResponseMessage roomResponse = await _backendHttpClient.Post($"/_matrix/client/r0/join/{HttpUtility.UrlEncode(room)}", true, null);
+                string roomContent = string.Empty;
 
                 try
                 {
+                    roomContent = await roomResponse.Content.ReadAsStringAsync();
                     roomResponse.EnsureSuccessStatusCode();
+
                     responseList.Add($"Successfully Joined {room}");
-                    JObject roomResponseJObject = JObject.Parse(await roomResponse.Content.ReadAsStringAsync());
-                    _activeRoomsList.Add(new MatrixChannel((string)roomResponseJObject["room_id"]));
+                    JObject roomResponseJObject = JObject.Parse(roomContent);
+
+                    MatrixRoom newRoom = new MatrixRoom(HomeServer, AccessToken,
+                        (string) roomResponseJObject["room_id"], room);
+                    Rooms.Add(newRoom.RoomId, newRoom);
+                    roomSuccessfullyJoined++;
                 }
                 catch (HttpRequestException)
+                {
+                    JObject error = JObject.Parse(roomContent);
+
+                    switch (roomResponse.StatusCode)
+                    {
+                        case HttpStatusCode.Forbidden:
+                            throw new MatrixRequestException(
+                                $"{error["errcode"]} - {error["error"]}. You're not allowed to enter {room}");
+                        case HttpStatusCode.TooManyRequests:
+                            var rateLimit = (int) error["retry_after_ms"];
+
+                            Console.WriteLine($"You're being rate-limited, waiting {rateLimit}ms");
+                            await Task.Delay(rateLimit);
+                            break;
+                        default:
+                            throw new MatrixRequestException(
+                                $"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured with code {roomResponse.StatusCode.ToString()}");
+                    }
+
+                    if (retryFailure)
+                    {
+                        i = i == 0 ? 0 : i - 1;
+                    }
+                    else
+                    {
+                        responseList.Add($"Failed to Join {room}");
+                    }
+                }
+                catch (NullReferenceException)
                 {
                     if (retryFailure)
                     {
@@ -239,6 +311,8 @@ namespace loc0CoreMatrixClient
 
                 await Task.Delay(2000);
             }
+
+            Console.WriteLine(); //since the progress output is a Write not Writeline this is needed so the next thing outputted will be on the next line
 
             return responseList;
         }
@@ -260,151 +334,142 @@ namespace loc0CoreMatrixClient
         }
 
         /// <summary>
+        /// Used to access a dictionary containing MatrixRoom objects for each room you've joined
+        /// </summary>
+        /// <param name="roomId">Room ID which acts as the key</param>
+        /// <param name="joinRoomIfNotFound">Attempt to join the room if it was not found</param>
+        /// <returns>MatrixRoom object for that room</returns>
+        /// <exception cref="KeyNotFoundException">Will be thrown if the room ID is not found</exception>
+        public async Task<MatrixRoom> GetMatrixRoomObject(string roomId, bool joinRoomIfNotFound)
+        {
+            if (Rooms.TryGetValue(roomId, out MatrixRoom room))
+            {
+                return room;
+            }
+
+            if (joinRoomIfNotFound)
+            {
+                string response = await JoinRoom(roomId);
+
+                Console.WriteLine(response);
+
+                if (Rooms.TryGetValue(roomId, out MatrixRoom newRoom))
+                {
+                    return newRoom;
+                }
+            }
+
+            throw new KeyNotFoundException("Room ID not found");
+        }
+
+        /// <summary>
         /// Upload a file to Matrix
         /// </summary>
         /// <param name="filePath">Path to the file you want to upload</param>
-        /// <returns>mxcUri for later use</returns>
+        /// <param name="contentType">Optionally specify content type, otherwise it will be automatically detected</param>
+        /// <returns>MatrixFileMessage with MxcUrl and Type, may return null if post fails</returns>
         /// <exception cref="FileNotFoundException"></exception>
-        public async Task<string> Upload(string filePath)
+        public async Task<MatrixFileMessage> Upload(string filePath, string contentType = null)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("File not found", Path.GetFileName(filePath));
 
-            var contentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath));
-            var filename = Path.GetFileName(filePath);
+            if (contentType == null) contentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath)); //credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
+            string filename = Path.GetFileName(filePath);
             var fileBytes = File.ReadAllBytes(filePath);
 
             HttpResponseMessage uploadResponse =
-                await _backendHttpClient.Post($"{HomeServer}/_matrix/media/r0/upload?filename={filename}&access_token={AccessToken}", fileBytes,
-                    contentType);
+                await _backendHttpClient.Post($"/_matrix/media/r0/upload?filename={HttpUtility.UrlEncode(filename)}", true, fileBytes,
+                    new Dictionary<string, string>() { { "Content-Type", contentType } });
+
+            string content = string.Empty;
 
             try
             {
+                content = await uploadResponse.Content.ReadAsStringAsync();
                 uploadResponse.EnsureSuccessStatusCode();
             }
             catch (HttpRequestException)
             {
-                return "Failed to upload";
+                JObject error = JObject.Parse(content);
+
+                switch (uploadResponse.StatusCode)
+                {
+                    case HttpStatusCode.TooManyRequests:
+                        var rateLimit = (int) error["retry_after_ms"];
+
+                        Console.WriteLine($"You're being rate-limited, waiting {rateLimit}ms");
+                        await Task.Delay(rateLimit);
+                        return await Upload(filePath, contentType);
+                    default:
+                        throw new MatrixRequestException(
+                            $"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured with code {uploadResponse.StatusCode.ToString()}");
+                }
+            }
+            catch (NullReferenceException)
+            {
+                return null;
             }
 
-            var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
+            string uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
 
             JObject uploadResponseJObject = JObject.Parse(uploadResponseContent);
-            var mxcUrl = (string) uploadResponseJObject["content_uri"];
 
-            return mxcUrl;
+            var matrixFileMessage = new MatrixFileMessage
+            {
+                MxcUrl = (string)uploadResponseJObject["content_uri"],
+                Filename = filename,
+                Description = filename
+            };
+
+            string contentTypeSplit = contentType.Split("/")[0];
+
+            switch (contentTypeSplit)
+            {
+                case "image":
+                case "video":
+                case "audio":
+                    matrixFileMessage.Type = $"m.{contentTypeSplit}";
+                    break;
+                default:
+                    matrixFileMessage.Type = "m.file";
+                    break;
+            }
+
+            return matrixFileMessage;
         }
 
         /// <summary>
-        /// Starts a message listener for any rooms you've joined
+        /// Starts an event listener for any rooms you've joined
         /// </summary>
-        /// <returns></returns>
-        public void StartListener() => Sync().ConfigureAwait(false);
+        public async void StartListener()
+        {
+            if (_syncCancellationToken == null || _syncCancellationToken.IsCancellationRequested)
+            {
+                _syncCancellationToken = new CancellationTokenSource();
+            }
+
+            _matrixListener = new MatrixListener();
+
+            await Task.Run(() => _matrixListener.Sync(this, _syncCancellationToken.Token), _syncCancellationToken.Token);
+        }
 
         /// <summary>
         /// Stop listening for events in the rooms you've joined
         /// </summary>
-        public void StopListener() => _syncCancellationToken.Cancel();
+        public void StopListener() => _syncCancellationToken?.Cancel();
+
+        internal void OnMessageReceived(MessageReceivedEventArgs args) => MessageReceived?.Invoke(args);
+
+        internal void OnInviteReceived(InviteReceivedEventArgs args) => InviteReceived?.Invoke(args);
 
         /// <summary>
-        /// Contact the sync endpoint
+        /// 
         /// </summary>
-        /// <returns></returns>
-        private async Task Sync() //break this up in the future, for now it's fine
+        public void Dispose()
         {
-            var nextBatch = string.Empty;
-
-            while (string.IsNullOrWhiteSpace(nextBatch))
-            {
-                nextBatch = await FirstSync();
-                await Task.Delay(2000);
-            }
-
-            while (!_syncCancellationToken.IsCancellationRequested)
-            {
-                HttpResponseMessage syncResponseMessage = await _backendHttpClient.Get(
-                    $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&since={nextBatch}&access_token={AccessToken}");
-                try
-                {
-                    syncResponseMessage.EnsureSuccessStatusCode();
-                }
-                catch (HttpRequestException)
-                {
-                    Console.WriteLine("Sync failed");
-                    await Task.Delay(2000, _syncCancellationToken.Token);
-                    continue;
-                }
-
-                var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
-
-                JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
-
-                nextBatch = (string)syncResponseJObject["next_batch"];
-
-                SyncChecks(syncResponseJObject);
-
-                await Task.Delay(2000, _syncCancellationToken.Token);
-            }
-        }
-
-        private async Task<string> FirstSync()
-        {
-            HttpResponseMessage firstSyncResponse = await _backendHttpClient.Get(
-                $"{HomeServer}/_matrix/client/r0/sync?filter={_filterId}&access_token={AccessToken}");
-
-            try
-            {
-                firstSyncResponse.EnsureSuccessStatusCode();
-            }
-            catch (HttpRequestException)
-            {
-                Console.WriteLine("Initial Sync failed");
-                return "";
-            }
-
-            var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
-
-            JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
-            return (string) firstSyncJObject["next_batch"];
-        }
-
-        private void SyncChecks(JObject syncJObject)
-        {
-            JToken roomJToken = syncJObject["rooms"]["join"];
-
-            if (roomJToken.HasValues) //Process new messages
-            {
-                foreach (JToken room in roomJToken.Children())
-                {
-                    var roomJProperty = (JProperty) room;
-                    string roomId = roomJProperty.Name;
-
-                    if (_activeRoomsList.All(x => x.ChannelId != roomId)) continue;
-
-                    foreach (JToken message in room.First["timeline"]["events"].Children())
-                    {
-                        var sender = (string)message["sender"];
-                        var body = (string)message["content"]["body"];
-
-                        var messageArgs = new MessageReceivedEventArgs(roomId, body, sender);
-                        MessageReceived?.Invoke(messageArgs);
-                    }
-                }
-            }
-
-            JToken inviteJToken = syncJObject["rooms"]["invite"];
-
-            if (inviteJToken.HasValues) //UNTESTED
-            {
-                foreach (JToken room in inviteJToken.Children())
-                {
-                    var roomIdJProperty = (JProperty) room;
-                    string roomId = roomIdJProperty.Name;
-
-                    var inviteArgs = new InviteReceivedEventArgs(roomId);
-                    InviteReceived?.Invoke(inviteArgs);
-                }
-            }
+            _backendHttpClient?.Dispose();
+            _syncCancellationToken?.Dispose();
         }
     }
 }
