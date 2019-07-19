@@ -7,7 +7,7 @@ using Newtonsoft.Json.Linq;
 
 namespace loc0CoreMatrixClient
 {
-    internal class MatrixListener
+    internal class MatrixListener : IDisposable
     {
         private MatrixHttp _backendHttpClient;
         private MatrixClient _client;
@@ -20,7 +20,7 @@ namespace loc0CoreMatrixClient
             _client = client;
             _backendHttpClient = new MatrixHttp(client.HomeServer, client.AccessToken);
 
-            var nextBatch = string.Empty;
+            string nextBatch = string.Empty;
 
             while (string.IsNullOrWhiteSpace(nextBatch) && !syncCancellationToken.IsCancellationRequested)
             {
@@ -36,14 +36,19 @@ namespace loc0CoreMatrixClient
                 {
                     syncResponseMessage.EnsureSuccessStatusCode();
                 }
-                catch (HttpRequestException)
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Sync failed");
-                    await Task.Delay(2000, syncCancellationToken);
-                    continue;
+                    if (ex is HttpRequestException || ex is NullReferenceException)
+                    {
+                        Console.WriteLine("Sync failed");
+                        await Task.Delay(2000, syncCancellationToken);
+                        continue;
+                    }
+
+                    throw;
                 }
 
-                var syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
+                string syncResponseMessageContents = await syncResponseMessage.Content.ReadAsStringAsync();
 
                 JObject syncResponseJObject = JObject.Parse(syncResponseMessageContents);
 
@@ -64,13 +69,18 @@ namespace loc0CoreMatrixClient
             {
                 firstSyncResponse.EnsureSuccessStatusCode();
             }
-            catch (HttpRequestException)
+            catch (Exception ex)
             {
-                Console.WriteLine("Initial Sync failed");
-                return null;
+                if (ex is HttpRequestException || ex is NullReferenceException)
+                {
+                    Console.WriteLine("Initial Sync failed");
+                    return null;
+                }
+
+                throw;
             }
 
-            var firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
+            string firstSyncResponseContents = await firstSyncResponse.Content.ReadAsStringAsync();
 
             JObject firstSyncJObject = JObject.Parse(firstSyncResponseContents);
             return (string)firstSyncJObject["next_batch"];
@@ -85,7 +95,7 @@ namespace loc0CoreMatrixClient
                 foreach (JToken room in roomJToken.Children())
                 {
                     var roomJProperty = (JProperty)room;
-                    var roomId = roomJProperty.Name;
+                    string roomId = roomJProperty.Name;
 
                     if (!_client.Rooms.ContainsKey(roomId)) continue;
 
@@ -115,6 +125,12 @@ namespace loc0CoreMatrixClient
                     _client.OnInviteReceived(inviteArgs);
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            _backendHttpClient?.Dispose();
+            _client?.Dispose();
         }
     }
 }

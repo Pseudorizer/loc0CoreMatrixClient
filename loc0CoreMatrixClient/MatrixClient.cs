@@ -17,7 +17,7 @@ namespace loc0CoreMatrixClient
     /// <summary>
     /// Client for interacting with the Matrix API
     /// </summary>
-    public class MatrixClient
+    public class MatrixClient : IDisposable
     {
         private readonly int _messageLimit;
         private MatrixHttp _backendHttpClient;
@@ -110,11 +110,17 @@ namespace loc0CoreMatrixClient
                         await Task.Delay(rateLimit);
                         return false;
                     default:
-                        throw new MatrixRequestException($"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured, error code {loginResponse.StatusCode.ToString()}");
+                        throw new MatrixRequestException(
+                            $"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured, error code {loginResponse.StatusCode.ToString()}");
                 }
             }
+            catch (NullReferenceException)
+            {
+                Console.WriteLine("Unknown error occurred in request");
+                return false;
+            }
 
-            var loginResponseJObject = JObject.Parse(loginResponseContent);
+            JObject loginResponseJObject = JObject.Parse(loginResponseContent);
 
             AccessToken = (string)loginResponseJObject["access_token"];
             DeviceId = (string)loginResponseJObject["device_id"];
@@ -123,7 +129,7 @@ namespace loc0CoreMatrixClient
 
             _backendHttpClient.SetAccessToken(AccessToken);
 
-            var filtersResult = await UploadFilters();
+            bool filtersResult = await UploadFilters();
 
             if (!filtersResult)
             {
@@ -166,7 +172,7 @@ namespace loc0CoreMatrixClient
                 ["event_fields"] = new JArray("content", "sender")
             };
 
-            var filterUrl = $"/_matrix/client/r0/user/{HttpUtility.UrlEncode(UserId)}/filter";
+            string filterUrl = $"/_matrix/client/r0/user/{HttpUtility.UrlEncode(UserId)}/filter";
 
             HttpResponseMessage filterResponse =
                 await _backendHttpClient.Post(filterUrl, true, filterJObject);
@@ -175,12 +181,17 @@ namespace loc0CoreMatrixClient
             {
                 filterResponse.EnsureSuccessStatusCode();
             }
-            catch (HttpRequestException)
+            catch (Exception ex)
             {
-                return false;
+                if (ex is HttpRequestException || ex is NullReferenceException)
+                {
+                    return false;
+                }
+
+                throw;
             }
 
-            var filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
+            string filterResponseContent = await filterResponse.Content.ReadAsStringAsync();
             JObject filterJObjectParsed = JObject.Parse(filterResponseContent);
             FilterId = (string)filterJObjectParsed["filter_id"];
 
@@ -199,9 +210,14 @@ namespace loc0CoreMatrixClient
             {
                 logoutResponse.EnsureSuccessStatusCode();
             }
-            catch (HttpRequestException)
+            catch (Exception ex)
             {
-                return false;
+                if (ex is HttpRequestException || ex is NullReferenceException)
+                {
+                    return false;
+                }
+
+                throw;
             }
 
             _syncCancellationToken.Cancel();
@@ -227,7 +243,7 @@ namespace loc0CoreMatrixClient
 
             for (var i = 0; i < roomsToJoin.Count; i++)
             {
-                var room = roomsToJoin[i];
+                string room = roomsToJoin[i];
                 Console.Write($"\rJoining room [{roomSuccessfullyJoined}/{roomsToJoin.Count}]");
 
                 if (Rooms.ContainsKey(room))
@@ -247,7 +263,8 @@ namespace loc0CoreMatrixClient
                     responseList.Add($"Successfully Joined {room}");
                     JObject roomResponseJObject = JObject.Parse(roomContent);
 
-                    MatrixRoom newRoom = new MatrixRoom(HomeServer, AccessToken, (string)roomResponseJObject["room_id"], room);
+                    MatrixRoom newRoom = new MatrixRoom(HomeServer, AccessToken,
+                        (string) roomResponseJObject["room_id"], room);
                     Rooms.Add(newRoom.RoomId, newRoom);
                     roomSuccessfullyJoined++;
                 }
@@ -258,7 +275,8 @@ namespace loc0CoreMatrixClient
                     switch (roomResponse.StatusCode)
                     {
                         case HttpStatusCode.Forbidden:
-                            throw new MatrixRequestException($"{error["errcode"]} - {error["error"]}. You're not allowed to enter {room}");
+                            throw new MatrixRequestException(
+                                $"{error["errcode"]} - {error["error"]}. You're not allowed to enter {room}");
                         case HttpStatusCode.TooManyRequests:
                             var rateLimit = (int) error["retry_after_ms"];
 
@@ -266,9 +284,21 @@ namespace loc0CoreMatrixClient
                             await Task.Delay(rateLimit);
                             break;
                         default:
-                            throw new MatrixRequestException($"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured with code {roomResponse.StatusCode.ToString()}");
+                            throw new MatrixRequestException(
+                                $"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured with code {roomResponse.StatusCode.ToString()}");
                     }
 
+                    if (retryFailure)
+                    {
+                        i = i == 0 ? 0 : i - 1;
+                    }
+                    else
+                    {
+                        responseList.Add($"Failed to Join {room}");
+                    }
+                }
+                catch (NullReferenceException)
+                {
                     if (retryFailure)
                     {
                         i = i == 0 ? 0 : i - 1;
@@ -319,7 +349,7 @@ namespace loc0CoreMatrixClient
 
             if (joinRoomIfNotFound)
             {
-                var response = await JoinRoom(roomId);
+                string response = await JoinRoom(roomId);
 
                 Console.WriteLine(response);
 
@@ -337,7 +367,7 @@ namespace loc0CoreMatrixClient
         /// </summary>
         /// <param name="filePath">Path to the file you want to upload</param>
         /// <param name="contentType">Optionally specify content type, otherwise it will be automatically detected</param>
-        /// <returns>MatrixFileMessage with MxcUrl and Type</returns>
+        /// <returns>MatrixFileMessage with MxcUrl and Type, may return null if post fails</returns>
         /// <exception cref="FileNotFoundException"></exception>
         public async Task<MatrixFileMessage> Upload(string filePath, string contentType = null)
         {
@@ -345,7 +375,7 @@ namespace loc0CoreMatrixClient
                 throw new FileNotFoundException("File not found", Path.GetFileName(filePath));
 
             if (contentType == null) contentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath)); //credit to samuelneff for mime types https://github.com/samuelneff/MimeTypeMap
-            var filename = Path.GetFileName(filePath);
+            string filename = Path.GetFileName(filePath);
             var fileBytes = File.ReadAllBytes(filePath);
 
             HttpResponseMessage uploadResponse =
@@ -370,25 +400,29 @@ namespace loc0CoreMatrixClient
 
                         Console.WriteLine($"You're being rate-limited, waiting {rateLimit}ms");
                         await Task.Delay(rateLimit);
-                        return null; //think of a way to retry
+                        return await Upload(filePath, contentType);
                     default:
                         throw new MatrixRequestException(
                             $"{error["errcode"] ?? ""} - {error["error"] ?? ""}. Unknown error occured with code {uploadResponse.StatusCode.ToString()}");
                 }
             }
+            catch (NullReferenceException)
+            {
+                return null;
+            }
 
-            var uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
+            string uploadResponseContent = await uploadResponse.Content.ReadAsStringAsync();
 
             JObject uploadResponseJObject = JObject.Parse(uploadResponseContent);
 
-            MatrixFileMessage matrixFileMessage = new MatrixFileMessage
+            var matrixFileMessage = new MatrixFileMessage
             {
                 MxcUrl = (string)uploadResponseJObject["content_uri"],
                 Filename = filename,
                 Description = filename
             };
 
-            var contentTypeSplit = contentType.Split("/")[0];
+            string contentTypeSplit = contentType.Split("/")[0];
 
             switch (contentTypeSplit)
             {
@@ -428,5 +462,14 @@ namespace loc0CoreMatrixClient
         internal void OnMessageReceived(MessageReceivedEventArgs args) => MessageReceived?.Invoke(args);
 
         internal void OnInviteReceived(InviteReceivedEventArgs args) => InviteReceived?.Invoke(args);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void Dispose()
+        {
+            _backendHttpClient?.Dispose();
+            _syncCancellationToken?.Dispose();
+        }
     }
 }

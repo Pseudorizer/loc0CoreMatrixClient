@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace loc0CoreMatrixClient
@@ -10,7 +11,7 @@ namespace loc0CoreMatrixClient
     /// <summary>
     /// Methods for communicating with the Matrix API
     /// </summary>
-    internal class MatrixHttp
+    internal class MatrixHttp : IDisposable
     {
         private readonly string _baseUrl;
         private readonly HttpClient _client = new HttpClient();
@@ -39,49 +40,68 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Post(string apiPath, bool authenticate, JObject data, Dictionary<string, string> contentHeaders) //maybe i could use an out here? return a bool out a responsemessage
         {
-            StringContent content;
-
-            if (data != null)
-            {
-                content = new StringContent(data.ToString(), Encoding.UTF8, "application/json");
-            }
-            else
-            {
-                content = new StringContent("{}");
-            }
+            StringContent content = data != null 
+                ? new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json") 
+                : new StringContent("{}");
 
             foreach ((string key, string value) in contentHeaders)
             {
                 content.Headers.Add(key, value);
             }
 
-            var url = AddBaseAndToken(apiPath, authenticate);
+            string url = AddBaseAndToken(apiPath, authenticate);
 
-            return await _client.PostAsync(new Uri(url), content);
+            HttpResponseMessage response;
+
+            try
+            {
+                response = await _client.PostAsync(new Uri(url), content);
+            }
+            catch (Exception ex)
+            {
+                if (ex is HttpRequestException || ex is NullReferenceException)
+                {
+                    return null;
+                }
+
+                throw;
+            }
+
+            return response;
         }
 
         public async Task<HttpResponseMessage> Post(string apiPath, bool authenticate, byte[] data,
             Dictionary<string, string> contentHeaders)
         {
-            ByteArrayContent content;
-
-            if (data != null)
+            using (ByteArrayContent content = data != null
+                ? new ByteArrayContent(data)
+                : new ByteArrayContent(new byte[0]))
             {
-                content = new ByteArrayContent(data);
-            }
-            else
-            {
-                content = new ByteArrayContent(new byte[0]);
-            }
+                foreach ((string key, string value) in contentHeaders)
+                {
+                    content.Headers.Add(key, value);
+                }
 
-            foreach ((string key, string value) in contentHeaders)
-            {
-                content.Headers.Add(key, value);
+                string url = AddBaseAndToken(apiPath, authenticate);
+
+                HttpResponseMessage response;
+
+                try
+                {
+                    response = await _client.PostAsync(new Uri(url), content);
+                }
+                catch (Exception ex)
+                {
+                    if (ex is HttpRequestException || ex is TaskCanceledException)
+                    {
+                        return null;
+                    }
+
+                    throw;
+                }
+
+                return response;
             }
-
-            var url = AddBaseAndToken(apiPath, authenticate);
-
-            return await _client.PostAsync(new Uri(url), content);
         }
 
         public async Task<HttpResponseMessage> Post(string apiPath, bool authenticate, JObject data)
@@ -97,7 +117,23 @@ namespace loc0CoreMatrixClient
         /// <returns>HttpResponseMessage for consumption</returns>
         public async Task<HttpResponseMessage> Get(string apiPath, bool authenticate)
         {
-            return await _client.GetAsync(new Uri(AddBaseAndToken(apiPath, authenticate)));
+            HttpResponseMessage response;
+
+            try
+            {
+                response = await _client.GetAsync(new Uri(AddBaseAndToken(apiPath, authenticate)));
+            }
+            catch (Exception ex)
+            {
+                if (ex is HttpRequestException || ex is TaskCanceledException)
+                {
+                    return null;
+                }
+
+                throw;
+            }
+
+            return response;
         }
 
         /// <summary>
@@ -133,5 +169,10 @@ namespace loc0CoreMatrixClient
         }
 
         private static string AddHttps(string url) => url.StartsWith("https://") ? url : "https://" + url;
+
+        public void Dispose()
+        {
+            _client?.Dispose();
+        }
     }
 }

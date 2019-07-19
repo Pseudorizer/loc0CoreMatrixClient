@@ -10,7 +10,7 @@ namespace loc0CoreMatrixClient
     /// <summary>
     /// Creates an instance of a matrix room allowing for interaction with said room
     /// </summary>
-    public class MatrixRoom
+    public class MatrixRoom : IDisposable
     {
         private readonly MatrixHttp _backendHttpClient;
 
@@ -55,13 +55,18 @@ namespace loc0CoreMatrixClient
                 {
                     getRoomIdResponse.EnsureSuccessStatusCode();
                 }
-                catch (HttpRequestException)
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Failed to get room ID from room alias");
-                    return false;
+                    if (ex is HttpRequestException || ex is NullReferenceException)
+                    {
+                        Console.WriteLine("Failed to get room ID from room alias");
+                        return false;
+                    }
+
+                    throw;
                 }
 
-                var getRoomIdResponseContent = await getRoomIdResponse.Content.ReadAsStringAsync();
+                string getRoomIdResponseContent = await getRoomIdResponse.Content.ReadAsStringAsync();
 
                 JObject roomIdJObject = JObject.Parse(getRoomIdResponseContent);
                 RoomId = (string) roomIdJObject["room_id"];
@@ -75,9 +80,14 @@ namespace loc0CoreMatrixClient
                 sendResponse.EnsureSuccessStatusCode();
                 return true;
             }
-            catch (HttpRequestException)
+            catch (Exception ex)
             {
-                return false;
+                if (ex is HttpRequestException || ex is NullReferenceException)
+                {
+                    return false;
+                }
+
+                throw;
             }
         }
 
@@ -89,7 +99,7 @@ namespace loc0CoreMatrixClient
         public async Task<bool> SendMessage(MatrixTextMessage textMessage)
         {
             textMessage.Format = "";
-            var textJObject = JObject.FromObject(textMessage);
+            JObject textJObject = JObject.FromObject(textMessage);
 
             textJObject["format"] = string.IsNullOrWhiteSpace(textMessage.FormattedBody) ? "" : "org.matrix.custom.html";
 
@@ -111,6 +121,14 @@ namespace loc0CoreMatrixClient
             }
 
             return await SendMessageRequest(jsonContent);
+        }
+
+        /// <summary>
+        /// Dispose HttpClient
+        /// </summary>
+        public void Dispose()
+        {
+            _backendHttpClient?.Dispose();
         }
     }
 }
